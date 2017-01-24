@@ -1,1 +1,1 @@
-# django-channels-websockets
+# django-channels-jsonrpc
