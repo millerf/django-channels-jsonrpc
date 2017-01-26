@@ -1,13 +1,11 @@
 from channels.generic.websockets import WebsocketConsumer
-from .jsonrpc import JsonRpcBase
 import json
-
-
+from six import string_types
 
 
 class JsonRpcException(Exception):
     """
-    >>> exc = JsonRpcException(1, INVALID_REQUEST)
+    >>> exc = JsonRpcException(1, JsonRpcWebsocketConsumer.INVALID_REQUEST)
     >>> str(exc)
     '{"jsonrpc": "2.0", "id": 1, "error": {"message": "Invalid Request", "code": -32600}}'
 
@@ -20,7 +18,7 @@ class JsonRpcException(Exception):
 
     @property
     def message(self):
-        return errors[self.code]
+        return JsonRpcWebsocketConsumer.errors[self.code]
 
     def as_dict(self):
         if self.data:
@@ -39,97 +37,124 @@ class JsonRpcException(Exception):
         return json.dumps(self.as_dict())
 
 
-
-"""
-http://groups.google.com/group/json-rpc/web/json-rpc-2-0
-
-errors:
-
-code 	message 	meaning
--32700 	Parse error 	Invalid JSON was received by the server.
-An error occurred on the server while parsing the JSON text.
--32600 	Invalid Request 	The JSON sent is not a valid Request object.
--32601 	Method not found 	The method does not exist / is not available.
--32602 	Invalid params 	Invalid method parameter(s).
--32603 	Internal error 	Internal JSON-RPC error.
--32099 to -32000 	Server error 	Reserved for implementation-defined server-errors.
-
-"""
-PARSE_ERROR = -32700
-INVALID_REQUEST = -32600
-METHOD_NOT_FOUND = -32601
-INVALID_PARAMS = -32602
-INTERNAL_ERROR = -32603
-GENERIC_APPLICATION_ERROR = -32000
-
-errors = {}
-errors[PARSE_ERROR] = "Parse Error"
-errors[INVALID_REQUEST] = "Invalid Request"
-errors[METHOD_NOT_FOUND] = "Method Not Found"
-errors[INVALID_PARAMS] = "Invalid Params"
-errors[INTERNAL_ERROR] = "Internal Error"
-errors[GENERIC_APPLICATION_ERROR] = "Application Error"
-
-
 class JsonRpcWebsocketConsumer(WebsocketConsumer):
     """
     Variant of WebsocketConsumer that automatically JSON-encodes and decodes
     messages as they come in and go out. Expects everything to be text; will
     error on binary data.
+
+    http://groups.google.com/group/json-rpc/web/json-rpc-2-0
+    errors:
+    code 	message 	meaning
+    -32700 	Parse error 	Invalid JSON was received by the server.
+            An error occurred on the server while parsing the JSON text.
+    -32600 	Invalid Request 	The JSON sent is not a valid Request object.
+    -32601 	Method not found 	The method does not exist / is not available.
+    -32602 	Invalid params 	Invalid method parameter(s).
+    -32603 	Internal error 	Internal JSON-RPC error.
+    -32099 to -32000
+            Server error 	Reserved for implementation-defined server-errors. (@TODO)
+
     """
+    PARSE_ERROR = -32700
+    INVALID_REQUEST = -32600
+    METHOD_NOT_FOUND = -32601
+    INVALID_PARAMS = -32602
+    INTERNAL_ERROR = -32603
+    GENERIC_APPLICATION_ERROR = -32000
 
-    avail_methods = {}
+    errors = dict()
+    errors[PARSE_ERROR] = "Parse Error"
+    errors[INVALID_REQUEST] = "Invalid Request"
+    errors[METHOD_NOT_FOUND] = "Method Not Found"
+    errors[INVALID_PARAMS] = "Invalid Params"
+    errors[INTERNAL_ERROR] = "Internal Error"
+    errors[GENERIC_APPLICATION_ERROR] = "Application Error"
 
-    @staticmethod
-    def rpc_method(rpc_name=None):
+    __avail_methods = dict()
+
+    @classmethod
+    def rpc_method(cls, rpc_name=None):
         """
         Decorator to list RPC methodds available. An optionnal name can be added
         :param rpc_name:
-        :return:
+        :return: decorated function
         """
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.func_name
-            JsonRpcWebsocketConsumer.avail_methods[name] = f
-            print JsonRpcWebsocketConsumer.avail_methods
+            if cls.__name__ not in cls.__avail_methods:
+                cls.__avail_methods[cls.__name__] = dict()
+            cls.__avail_methods[cls.__name__][name] = f
         return wrap
 
+    @classmethod
+    def get_rpc_methods(cls):
+        """
+        Returns the RPC methods available for this consumer
+        :return: list
+        """
+        if cls.__class__ not in cls.__avail_methods:
+            return []
+        return cls.__avail_methods[cls.__class__].keys()
 
-    def error(self, id, code, message):
+    @staticmethod
+    def error(id, code, message, data=None):
+
+        """
+        Error-type answer generator
+        :param id: int
+        :param code: code of the error
+        :param message: message for the error
+        :param data: (optional) error data
+        :return: object
+        """
+        error_obj = {'code': code, 'message': message}
+        if data is not None:
+            error_obj['data'] = data
+
         return {
                     'jsonrpc': '2.0',
                     'id': id,
-                    'error': {
-                        'code': code,
-                        'message': message
-                        }
+                    'error': error_obj
                     }
+
     def raw_receive(self, message, **kwargs):
+        """
+        Called when receiving a message.
+        :param message: (string) message received
+        :param kwargs:
+        :return:
+        """
 
         if "text" in message:
             try:
                 data = json.loads(message['text'])
                 if isinstance(data, dict):
-                    # resdata = self._call(data, extra_vars)
-                    # ACTUAL CALL
-                    print "heeeeereee"
-                    pass
+
+                    if data.get('method') is not None and data.get('params') is not None and not data.get('id'):
+                        # notification, we don't support it just yet
+                        return
+
+                    try:
+                        result = self.__process(data)
+                    except JsonRpcException as e:
+                        result = e.as_dict()
+                    except Exception as e:
+                        result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), json.dumps(e.args))
+
                 elif isinstance(data, list):
                     if len([x for x in data if not isinstance(x, dict)]):
-                        resdata = self.error(None, INVALID_REQUEST, errors[INVALID_REQUEST])
-            except Exception, e:
-                resdata = self.error(None, INVALID_REQUEST, errors[INVALID_REQUEST])
+                        result = self.error(None, self.INVALID_REQUEST, self.errors[INVALID_REQUEST])
+            except ValueError as e:
+                # json could not decoded
+                result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
+            except Exception as e:
+                result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
         else:
-            resdata = self.error(None, INVALID_REQUEST, errors[INVALID_REQUEST])
+            result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
-        self.send(resdata)
-
-
-    def receive(self, content, **kwargs):
-        """
-        Called with decoded JSON content.
-        """
-        pass
+        self.send(result)
 
     def send(self, content, close=False):
         """
@@ -140,3 +165,49 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
     @classmethod
     def group_send(cls, name, content, close=False):
         WebsocketConsumer.group_send(name, json.dumps(content), close=close)
+
+    @classmethod
+    def __process(cls, data):
+        """
+        Process the recived data
+        :param data: object
+        :return: object
+        """
+
+        if data.get('jsonrpc') != "2.0":
+            raise JsonRpcException(data.get('id'), cls.INVALID_REQUEST)
+
+        if 'method' not in data:
+            raise JsonRpcException(data.get('id'), cls.INVALID_REQUEST)
+
+        methodname = data['method']
+        if not isinstance(methodname, string_types):
+            raise JsonRpcException(data.get('id'), cls.INVALID_REQUEST)
+
+        if methodname.startswith('_'):
+            raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
+
+        if cls.__class__ not in cls.__avail_methods or \
+                        methodname not in cls.__avail_methods[cls.__class__]:
+            raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
+
+        method = JsonRpcWebsocketConsumer.__avail_methods[methodname]
+        params = data.get('params', [])
+
+        if not isinstance(params, (list, dict)):
+            raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
+
+        args = []
+        kwargs = {}
+        if isinstance(params, list):
+            args = params
+        elif isinstance(params, dict):
+            kwargs.update(params)
+
+        result = method(*args, **kwargs)
+
+        return {
+            'jsonrpc': '2.0',
+            'id': data.get('id'),
+            'result': result,
+        }

@@ -30,12 +30,9 @@ class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
 
 
 
-@JsonRpcWebsocketConsumer.rpc_method()
-def ping(txt):
-    return "Pong"
 
 
-class MyJsonWebsocketConsumer(JsonWebsocketConsumer):
+class MyJsonWebsocketConsumer(JsonRpcWebsocketConsumer):
 
     # Set to True if you want them, else leave out
     strict_ordering = False
@@ -62,3 +59,8 @@ class MyJsonWebsocketConsumer(JsonWebsocketConsumer):
         Perform things on connection close
         """
         print "disconnect"
+
+
+@MyJsonWebsocketConsumer.rpc_method()
+def ping():
+    return "pong"
