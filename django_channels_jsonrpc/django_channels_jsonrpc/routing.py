@@ -1,4 +1,4 @@
-from .consumer import MyJsonWebsocketConsumer, MyJsonRpcWebsocketConsumer
+from .consumer import MyJsonRpcWebsocketConsumer
 from channels.generic.websockets import WebsocketConsumer, JsonWebsocketConsumer
 
 

@@ -71,7 +71,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
     errors[INTERNAL_ERROR] = "Internal Error"
     errors[GENERIC_APPLICATION_ERROR] = "Application Error"
 
-    __avail_methods = dict()
+    available_rpc_methods = dict()
 
     @classmethod
     def rpc_method(cls, rpc_name=None):
@@ -82,9 +82,9 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         """
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.func_name
-            if cls.__name__ not in cls.__avail_methods:
-                cls.__avail_methods[cls.__name__] = dict()
-            cls.__avail_methods[cls.__name__][name] = f
+            if cls.__name__ not in cls.available_rpc_methods:
+                cls.available_rpc_methods[cls.__name__] = dict()
+            cls.available_rpc_methods[cls.__name__][name] = f
         return wrap
 
     @classmethod
@@ -93,9 +93,9 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         Returns the RPC methods available for this consumer
         :return: list
         """
-        if cls.__class__ not in cls.__avail_methods:
+        if cls.__name__ not in cls.available_rpc_methods:
             return []
-        return cls.__avail_methods[cls.__class__].keys()
+        return cls.available_rpc_methods[cls.__name__].keys()
 
     @staticmethod
     def error(id, code, message, data=None):
@@ -144,7 +144,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
                 elif isinstance(data, list):
                     if len([x for x in data if not isinstance(x, dict)]):
-                        result = self.error(None, self.INVALID_REQUEST, self.errors[INVALID_REQUEST])
+                        result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
             except ValueError as e:
                 # json could not decoded
                 result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
@@ -187,11 +187,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         if methodname.startswith('_'):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
 
-        if cls.__class__ not in cls.__avail_methods or \
-                        methodname not in cls.__avail_methods[cls.__class__]:
+        try:
+            method = cls.available_rpc_methods[cls.__name__][methodname]
+        except KeyError:
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
-
-        method = JsonRpcWebsocketConsumer.__avail_methods[methodname]
         params = data.get('params', [])
 
         if not isinstance(params, (list, dict)):
