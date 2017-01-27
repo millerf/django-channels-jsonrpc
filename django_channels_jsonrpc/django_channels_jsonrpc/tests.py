@@ -156,4 +156,4 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         client.send_and_consume(u'websocket.receive',
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping_with_error", "params":{}}')
         msg = client.receive()
-        self.assertEqual(msg['error']['message'], u'ping2() takes no arguments (1 given)')
+        self.assertEqual(msg['error']['message'], u'pong_with_error')
