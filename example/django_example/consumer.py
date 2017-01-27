@@ -1,5 +1,5 @@
-from channels.generic.websockets import WebsocketConsumer, JsonWebsocketConsumer
-from .jsonrpcwebsocketconsumer import JsonRpcWebsocketConsumer
+from channels_jsonrpc import JsonRpcWebsocketConsumer
+
 
 class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
 
@@ -14,14 +14,14 @@ class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
         """
         return ["test"]
 
-    def receive(self, content, **kwargs):
+    def connect(self, message, **kwargs):
         """
-        Called when a message is received with decoded JSON content
+        Perform things on connection start
         """
-        # Simple echo
-        print("received: %s" % content)
-        print("kwargs %s" % kwargs)
-        self.send(content)
+        self.message.reply_channel.send({"accept": True})
+        print("connect")
+
+        # Do stuff if needed
 
     def disconnect(self, message, **kwargs):
         """
@@ -29,7 +29,17 @@ class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
         """
         print("disconnect")
 
+        # Do stuff if needed
 
 @MyJsonRpcWebsocketConsumer.rpc_method()
-def ping():
-    return "pong"
+def ping(fake_an_error):
+    if fake_an_error:
+        # Will return an error to the client
+        #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
+        #  <-- {"id": 1, "jsonrpc": "2.0", "error": {"message": "fake_error", "code": -32000, "data": ["fake_error"]}}
+        raise Exception("fake_error")
+    else:
+        # Will return a resultto the client
+        #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
+        #  <-- {"id": 1, "jsonrpc": "2.0", "result": "pong"}
+        return "pong"

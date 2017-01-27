@@ -47,7 +47,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'channels_jsonrpc.urls'
+ROOT_URLCONF = 'django_example.urls'
 
 TEMPLATES = [
     {
@@ -65,7 +65,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'channels_jsonrpc.wsgi.application'
+WSGI_APPLICATION = 'django_example.wsgi.application'
 
 
 # Database
@@ -120,6 +120,6 @@ STATIC_URL = '/static/'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "asgiref.inmemory.ChannelLayer",
-        "ROUTING": "channels_jsonrpc.routing.channel_routing"
+        "ROUTING": "django_example.routing.channel_routing"
     }
 }

@@ -1,5 +1,4 @@
 from .consumer import MyJsonRpcWebsocketConsumer
-from channels.generic.websockets import WebsocketConsumer, JsonWebsocketConsumer
 
 
 channel_routing = [
