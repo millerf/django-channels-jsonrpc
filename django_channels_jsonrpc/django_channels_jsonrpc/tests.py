@@ -85,7 +85,9 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         client.send_and_consume(u'websocket.receive',
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping2", "params":["test"]}')
         msg = client.receive()
-        self.assertEqual(msg['error']['message'], u'ping2() takes no arguments (1 given)')
+        self.assertIn(msg['error']['message'],
+                      [u'ping2() takes 0 positional arguments but 1 was given',
+                       u'ping2() takes no arguments (1 given)'])
 
     def test_parsing_with_good_request(self):
         # Test that parsing a ping request works
