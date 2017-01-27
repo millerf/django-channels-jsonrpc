@@ -22,14 +22,16 @@ class JsonRpcException(Exception):
 
     def as_dict(self):
         if self.data:
-            return {'jsonrpc': '2.0',
+            return {
                     'id': self.rpc_id,
+                    'jsonrpc': '2.0',
                     'error': {'code': self.code,
                               'message': self.message,
                               'data': self.data}}
         else:
-            return {'jsonrpc': '2.0',
+            return {
                     'id': self.rpc_id,
+                    'jsonrpc': '2.0',
                     'error': {'code': self.code,
                               'message': self.message}}
 
@@ -113,8 +115,8 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             error_obj['data'] = data
 
         return {
-                    'jsonrpc': '2.0',
                     'id': id,
+                    'jsonrpc': '2.0',
                     'error': error_obj
                     }
 
@@ -206,7 +208,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         result = method(*args, **kwargs)
 
         return {
-            'jsonrpc': '2.0',
             'id': data.get('id'),
+            'jsonrpc': '2.0',
             'result': result,
         }
