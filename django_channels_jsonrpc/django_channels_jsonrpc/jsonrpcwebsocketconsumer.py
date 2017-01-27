@@ -95,7 +95,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         """
         if cls.__name__ not in cls.available_rpc_methods:
             return []
-        return cls.available_rpc_methods[cls.__name__].keys()
+        return list(cls.available_rpc_methods[cls.__name__].keys())
 
     @staticmethod
     def error(id, code, message, data=None):
