@@ -81,7 +81,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :return: decorated function
         """
         def wrap(f):
-            name = rpc_name if rpc_name is not None else f.func_name
+            name = rpc_name if rpc_name is not None else f.__name__
             if cls.__name__ not in cls.available_rpc_methods:
                 cls.available_rpc_methods[cls.__name__] = dict()
             cls.available_rpc_methods[cls.__name__][name] = f
