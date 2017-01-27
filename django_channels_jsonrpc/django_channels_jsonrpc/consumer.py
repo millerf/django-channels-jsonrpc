@@ -19,15 +19,15 @@ class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
         Called when a message is received with decoded JSON content
         """
         # Simple echo
-        print "received: %s" % content
-        print "kwargs %s" % kwargs
+        print("received: %s" % content)
+        print("kwargs %s" % kwargs)
         self.send(content)
 
     def disconnect(self, message, **kwargs):
         """
         Perform things on connection close
         """
-        print "disconnect"
+        print("disconnect")
 
 
 @MyJsonRpcWebsocketConsumer.rpc_method()
