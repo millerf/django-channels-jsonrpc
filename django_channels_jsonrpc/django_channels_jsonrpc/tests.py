@@ -157,3 +157,25 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping_with_error", "params":{}}')
         msg = client.receive()
         self.assertEqual(msg['error']['message'], u'pong_with_error')
+
+    def test_namesake_consumers(self):
+
+        class Context1():
+            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumer):
+                pass
+
+        class Context2():
+            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumer):
+                pass
+
+        @Context1.TestNamesakeJsonRpcConsumer.rpc_method()
+        def method1():
+          pass
+
+        @Context2.TestNamesakeJsonRpcConsumer.rpc_method()
+        def method2():
+          pass
+
+        self.assertEquals(Context1.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method1'])
+        self.assertEquals(Context2.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method2'])
+
