@@ -82,9 +82,9 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         """
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
-            if cls.__name__ not in cls.available_rpc_methods:
-                cls.available_rpc_methods[cls.__name__] = dict()
-            cls.available_rpc_methods[cls.__name__][name] = f
+            if id(cls) not in cls.available_rpc_methods:
+                cls.available_rpc_methods[id(cls)] = dict()
+            cls.available_rpc_methods[id(cls)][name] = f
         return wrap
 
     @classmethod
@@ -93,9 +93,9 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         Returns the RPC methods available for this consumer
         :return: list
         """
-        if cls.__name__ not in cls.available_rpc_methods:
+        if id(cls) not in cls.available_rpc_methods:
             return []
-        return list(cls.available_rpc_methods[cls.__name__].keys())
+        return list(cls.available_rpc_methods[id(cls)].keys())
 
     @staticmethod
     def error(id, code, message, data=None):
@@ -188,7 +188,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
 
         try:
-            method = cls.available_rpc_methods[cls.__name__][methodname]
+            method = cls.available_rpc_methods[id(cls)][methodname]
         except KeyError:
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
         params = data.get('params', [])
