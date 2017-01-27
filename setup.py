@@ -18,7 +18,7 @@ setup(
     license='MIT License',
     description='A JSON-RPC implemmentation for Django channels consumer.',
     long_description=README,
-    url='https://github.com/millerf/channels_jsonrpc',
+    url='https://github.com/millerf/django-channels-jsonrpc/',
     author='Fabien Millerand - MILLER/f',
     author_email='fab@millerf.com',
     test_suite='channels_jsonrpc.tests.tests',
