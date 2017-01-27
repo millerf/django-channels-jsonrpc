@@ -22,7 +22,7 @@ $ pip install django-channels-jsonrpc
 
 
 ## Use
-======
+-------
 
 See complete exmaple [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
 
