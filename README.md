@@ -1,6 +1,6 @@
 # Django-channels-jsonrpc
 
-======
+
 
 
 The Django-channels-jsonrpc is aimed to enable [JSON-RPC](http://json-rpc.org/) functionnality on top of the excellent django channels project and especially their Websockets functionality.
@@ -10,12 +10,12 @@ It is aimed to be:
   - Easy integration
 
 ## Tech
-----
+
 
 The only Django-channels-jsonrpc dependency is the [Django channels project](https://github.com/django/channels)
 
 ## Installation
-----
+
 
 Download and extract the [latest pre-built release](https://github.com/joemccann/dillinger/releases).
 
@@ -27,7 +27,7 @@ $ pip install django-channels-jsonrpc
 
 
 ## Use
-----
+
 
 See complete exmaple [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
 
@@ -122,7 +122,7 @@ def ping(fake_an_error):
 
 
 ## Testing
-----
+
 
 The JsonRpcWebsocketConsumer class can be tested the same way Channels Consumers are tested.
 See [here](http://channels.readthedocs.io/en/stable/testing.html)
@@ -130,8 +130,8 @@ See [here](http://channels.readthedocs.io/en/stable/testing.html)
 
 
 
-License
-----
+## License
+
 
 MIT
 
