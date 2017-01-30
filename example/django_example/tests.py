@@ -1,7 +1,3 @@
-import sys
-import os
-cwd = os.path.dirname(os.path.realpath(__file__))
-sys.path.append('%s/../../channels_jsonrpc' % cwd)
 from channels_jsonrpc import JsonRpcWebsocketConsumer
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumer
@@ -30,25 +26,59 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
         client = HttpClient()
 
-        client.send_and_consume(u'websocket.receive', {'value': 'my_value'})
-        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
-                                                     u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
-
         client.send_and_consume(u'websocket.receive', text='{"value": "my_value"}')
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
                                                      u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+        client.send_and_consume(u'websocket.receive', text='["value", "my_value"]')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+        # missing "method"
+        client.send_and_consume(u'websocket.receive', text='{"id":"2", "jsonrpc":"2.0", "params":{}}')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+        # wrong method name
+        client.send_and_consume(u'websocket.receive', text='{"id":"2", "jsonrpc":"2.0", "method":2, "params":{}}')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+        # wrong method name
+        client.send_and_consume(u'websocket.receive', text='{"id":"2", "jsonrpc":"2.0", "method":"_test", "params":{}}')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.METHOD_NOT_FOUND,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.METHOD_NOT_FOUND]})
+
+        client.send_and_consume(u'websocket.receive', text='{"value": "my_value"}')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.INVALID_REQUEST]})
 
         client.send_and_consume(u'websocket.receive', text='sqwdw')
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.PARSE_ERROR,
                                                      u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.PARSE_ERROR]})
 
-        client.send_and_consume(u'websocket.receive', {})
+        client.send_and_consume(u'websocket.receive', text='{}')
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
                                                      u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
 
         client.send_and_consume(u'websocket.receive', text=None)
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
                                                      u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+    def test_unexisting_method(self):
+        # unknown method
+        client = HttpClient()
+
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id": 1, "jsonrpc": "2.0", "method": "unknown_method", "params": {}}')
+        msg = client.receive()
+        self.assertEqual(msg['error'], {u'code': JsonRpcWebsocketConsumer.METHOD_NOT_FOUND,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.METHOD_NOT_FOUND]})
 
     def test_parsing_with_bad_request(self):
         # Test that parsing a bad request works
