@@ -1,5 +1,5 @@
 from channels.tests import ChannelTestCase, HttpClient
-from .jsonrpcwebsocketconsumer import JsonRpcWebsocketConsumer
+from channels_jsonrpc import JsonRpcWebsocketConsumer
 from .consumer import MyJsonRpcWebsocketConsumer
 
 
@@ -93,7 +93,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         # Test that parsing a ping request works
         client = HttpClient()
 
-        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping", "params":{}}')
+        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping", "params":[false]}')
         msg = client.receive()
         self.assertEqual(msg['result'], "pong")
 
