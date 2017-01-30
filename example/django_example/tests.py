@@ -1,4 +1,4 @@
-from channels_jsonrpc import JsonRpcWebsocketConsumer
+from channels_jsonrpc import JsonRpcWebsocketConsumer, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumer
 
@@ -29,6 +29,11 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         client.send_and_consume(u'websocket.receive', text='{"value": "my_value"}')
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
                                                      u'message': JsonRpcWebsocketConsumer.errors[JsonRpcWebsocketConsumer.INVALID_REQUEST]})
+
+        client.send_and_consume(u'websocket.receive')
+        self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.INVALID_REQUEST]})
 
         client.send_and_consume(u'websocket.receive', text='["value", "my_value"]')
         self.assertEqual(client.receive()['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_REQUEST,
@@ -192,6 +197,21 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         msg = client.receive()
         self.assertEqual(msg['error']['message'], u'pong_with_error')
 
+    def test_error_on_rpc_call_with_data(self):
+        @MyJsonRpcWebsocketConsumer.rpc_method()
+        def ping_with_error_data():
+            raise JsonRpcException(1, JsonRpcWebsocketConsumer.GENERIC_APPLICATION_ERROR, data="test_data")
+
+        # Test that parsing a ping request works
+        client = HttpClient()
+
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"ping_with_error_data", "params":{}}')
+        msg = client.receive()
+        self.assertEqual(msg['id'], 1)
+        self.assertEqual(msg['error']['code'], JsonRpcWebsocketConsumer.GENERIC_APPLICATION_ERROR)
+        self.assertEqual(msg['error']['data'], u'test_data')
+
     def test_namesake_consumers(self):
 
         class Context1():
@@ -212,4 +232,19 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
         self.assertEquals(Context1.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method1'])
         self.assertEquals(Context2.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method2'])
+
+    def test_no_rpc_methods(self):
+        class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumer):
+            pass
+
+        self.assertEquals(TestNamesakeJsonRpcConsumer.get_rpc_methods(), [])
+
+    def test_jsonRpcexception_dumping(self):
+        import json
+        exception = JsonRpcException(1, JsonRpcWebsocketConsumer.GENERIC_APPLICATION_ERROR, data="test_data")
+        json_res= json.loads(str(exception))
+        self.assertEqual(json_res["id"], 1)
+        self.assertEqual(json_res["jsonrpc"], "2.0")
+        self.assertEqual(json_res["error"]["data"], "test_data")
+        self.assertEqual(json_res["error"]["code"], JsonRpcWebsocketConsumer.GENERIC_APPLICATION_ERROR)
 
