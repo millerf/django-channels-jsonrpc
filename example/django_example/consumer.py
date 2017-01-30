@@ -1,4 +1,7 @@
-from channels_jsonrpc import JsonRpcWebsocketConsumer
+import sys
+sys.path.append('%s../../channels_jsonrpc' % dir(__file__))
+
+from .channels_jsonrpc import JsonRpcWebsocketConsumer
 
 
 class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):

@@ -1,3 +1,7 @@
+import sys
+sys.path.append('%s../../channels_jsonrpc' % dir(__file__))
+
+
 from channels.tests import ChannelTestCase, HttpClient
 from .channels_jsonrpc import JsonRpcWebsocketConsumer
 from .consumer import MyJsonRpcWebsocketConsumer
