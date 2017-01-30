@@ -39,7 +39,7 @@ def ping(fake_an_error):
         #  <-- {"id": 1, "jsonrpc": "2.0", "error": {"message": "fake_error", "code": -32000, "data": ["fake_error"]}}
         raise Exception("fake_error")
     else:
-        # Will return a resultto the client
+        # Will return a result to the client
         #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
         #  <-- {"id": 1, "jsonrpc": "2.0", "result": "pong"}
         return "pong"
