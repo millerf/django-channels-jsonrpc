@@ -6,3 +6,5 @@ script:
 env:
   - TOXENV=django110
   - TOXENV=coverage
+before_script:
+  - ln -sFf channels_jsonrpc/ example/django_example/channels_jsonrpc
