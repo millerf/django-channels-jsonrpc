@@ -100,11 +100,11 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         return list(cls.available_rpc_methods[id(cls)].keys())
 
     @staticmethod
-    def error(id, code, message, data=None):
+    def error(_id, code, message, data=None):
 
         """
         Error-type answer generator
-        :param id: int
+        :param _id: int
         :param code: code of the error
         :param message: message for the error
         :param data: (optional) error data
@@ -115,7 +115,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             error_obj['data'] = data
 
         return {
-                    'id': id,
+                    'id': _id,
                     'jsonrpc': '2.0',
                     'error': error_obj
                     }
