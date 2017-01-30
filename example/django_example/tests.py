@@ -128,13 +128,27 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                       [u'ping2() takes 0 positional arguments but 1 was given',
                        u'ping2() takes no arguments (1 given)'])
 
+    def test_parsing_with_good_request_ainvalid_paramas(self):
+        @JsonRpcWebsocketConsumer.rpc_method()
+        def ping2(test):
+            return "pong2"
+
+        # Test that parsing a ping request works
+        client = HttpClient()
+
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"ping2", "params":true}')
+        msg = client.receive()
+        self.assertEqual(msg['error'], {u'code': JsonRpcWebsocketConsumer.INVALID_PARAMS,
+                                                     u'message': JsonRpcWebsocketConsumer.errors[
+                                                         JsonRpcWebsocketConsumer.INVALID_PARAMS]})
     def test_parsing_with_good_request(self):
         # Test that parsing a ping request works
         client = HttpClient()
 
         client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping", "params":[false]}')
         msg = client.receive()
-        self.assertEqual(msg['result'], "pong")
+        self.assertEquals(msg['result'], "pong")
 
     def test_id_on_good_request(self):
         # Test that parsing a ping request works
