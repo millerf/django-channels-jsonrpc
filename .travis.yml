@@ -6,3 +6,11 @@ script:
 env:
   - TOXENV=django110
   - TOXENV=coverage
+notifications:
+  slack:
+    on_success: always
+  email:
+    recipients:
+        - fab@mozaik.life
+    on_success: change # default: change
+    on_failure: always # default: always
