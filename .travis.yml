@@ -1,16 +1,16 @@
 language: python
 install:
-  - pip install tox
+- pip install tox
 script:
-  - tox
+- tox
 env:
-  - TOXENV=django110
-  - TOXENV=coverage
+- TOXENV=django110
+- TOXENV=coverage
 notifications:
   slack:
-    on_success: always
+    secure: QVhlHVTMjtt5xwpF2936+gdB3iriawm4DyKd3kWMD8IPvXER+z7xSti41FQVIP99bkkfmHxvmBu/e7Sofvn7W/aK4LnZ31p1AkvnR7v0VGH6lZ8KbJFk5CJV5cR8pDRigPOB3D4i09MhiBtTdRBc/rNFiBWmJ0mwze6K8y5Bm5Mg/Ai26Fn/bMs9nxxoTDzcjgKMHelKwUatMaTCT2E1mKJftJ7KNXK5b0AoAd0T15nQ/z/0RaiRc6NKypr14kuNFJARVRR48FfSNsGKhLNy1dJKEAdPiOrD4I9VC6tbnOwhG6pc9zLD6sUlmIt6bdmJQTutN8WG06PSD5SiX78KZqsxpsfvkXsDulw+lwlI5Fb97G9MLNPVxTou2jyymm0p/DEJa9S+lDrzuuMEgipYRJxl7KtOf9kib+A4nYlQUgqXm9TSJsTpWo00+oF+EuKmKz0mqwbGXDWqZ0L0InXZ4hY0j6EYLpt/47BORBevNJjn1UDzWfDOAa0h55YLKuKiRcxuLofGeVoBES0gYdM2Q9dMWV/9qQPI5LiAFjvl+yU4rY1iue67KbPUxqaInUWaMofAgY0su2EYsevndQaWUrngkuI8HnxGNeTVMFJAzGDUm28FfbWUfHs6a7Muf8DkHRNtXbJDp6+yAwuFMYPxOTFgzhctNgRKx5JRjbvYmTU=
   email:
     recipients:
-        - fab@mozaik.life
-    on_success: change # default: change
-    on_failure: always # default: always
+    - fab@mozaik.life
+    on_success: change
+    on_failure: always
