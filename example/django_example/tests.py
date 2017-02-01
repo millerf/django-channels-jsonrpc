@@ -3,6 +3,13 @@ from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumerTest
 
 
+class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+    pass
+
+
+class TestMyJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
+    pass
+
 class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_connection(self):
@@ -170,15 +177,11 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_get_rpc_methods(self):
 
-        class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
-            pass
-
         @TestMyJsonRpcConsumer.rpc_method()
         def ping3():
             return "pong3"
 
-        class TestMyJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
-            pass
+
         @TestMyJsonRpcConsumer2.rpc_method()
         def ping4():
             return "pong4"
