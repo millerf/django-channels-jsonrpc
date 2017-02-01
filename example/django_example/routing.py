@@ -1,7 +1,6 @@
-from .consumer import MyJsonRpcWebsocketConsumer
+from .consumer import MyJsonRpcWebsocketConsumerTest
 
 
 channel_routing = [
-    MyJsonRpcWebsocketConsumer.as_route(path=r"")
-
+    MyJsonRpcWebsocketConsumerTest.as_route(path=r"")
 ]

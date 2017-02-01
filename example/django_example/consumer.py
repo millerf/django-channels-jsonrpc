@@ -1,7 +1,7 @@
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest
 
 
-class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumerTest):
+class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
 
     # Set to True if you want them, else leave out
     strict_ordering = False
@@ -31,7 +31,7 @@ class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumerTest):
 
         # Do stuff if needed
 
-@MyJsonRpcWebsocketConsumer.rpc_method()
+@MyJsonRpcWebsocketConsumerTest.rpc_method()
 def ping(fake_an_error):
     if fake_an_error:
         # Will return an error to the client
