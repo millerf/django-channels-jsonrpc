@@ -3,6 +3,13 @@ from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumerTest
 
 
+class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+    pass
+
+
+class TestMyJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
+    pass
+
 class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_connection(self):
@@ -170,15 +177,11 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_get_rpc_methods(self):
 
-        class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
-            pass
-
         @TestMyJsonRpcConsumer.rpc_method()
         def ping3():
             return "pong3"
 
-        class TestMyJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
-            pass
+
         @TestMyJsonRpcConsumer2.rpc_method()
         def ping4():
             return "pong4"
@@ -228,24 +231,26 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_namesake_consumers(self):
 
+        # Changed name to TestNamesakeJsonRpcConsumer2 to prevent overlapping with "previous" TestMyJsonRpcConsumer
+
         class Context1():
-            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+            class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
 
         class Context2():
-            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+            class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
 
-        @Context1.TestNamesakeJsonRpcConsumer.rpc_method()
+        @Context1.TestNamesakeJsonRpcConsumer2.rpc_method()
         def method1():
           pass
 
-        @Context2.TestNamesakeJsonRpcConsumer.rpc_method()
+        @Context2.TestNamesakeJsonRpcConsumer2.rpc_method()
         def method2():
           pass
 
-        self.assertEquals(Context1.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method1'])
-        self.assertEquals(Context2.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method2'])
+        self.assertEquals(Context1.TestNamesakeJsonRpcConsumer2.get_rpc_methods(), ['method1'])
+        self.assertEquals(Context2.TestNamesakeJsonRpcConsumer2.get_rpc_methods(), ['method2'])
 
     def test_no_rpc_methods(self):
         class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
