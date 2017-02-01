@@ -4,7 +4,18 @@ install:
 script:
 - tox
 env:
-- TOXENV=django110
+- TOXENV=py27-django18
+- TOXENV=py27-django19
+- TOXENV=py27-django110
+- TOXENV=py34-django18
+- TOXENV=py34-django19
+- TOXENV=py34-django110
+- TOXENV=py35-django18
+- TOXENV=py35-django19
+- TOXENV=py35-django110
+- TOXENV=py36-django18
+- TOXENV=py36-django19
+- TOXENV=py36-django110
 - TOXENV=coverage
 notifications:
   slack:
