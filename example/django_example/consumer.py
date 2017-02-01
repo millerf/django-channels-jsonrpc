@@ -1,7 +1,7 @@
-from channels_jsonrpc import JsonRpcWebsocketConsumer
+from channels_jsonrpc import JsonRpcWebsocketConsumerTest
 
 
-class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
+class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumerTest):
 
     # Set to True if you want them, else leave out
     strict_ordering = False

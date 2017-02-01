@@ -1,4 +1,4 @@
-from channels_jsonrpc import JsonRpcWebsocketConsumer, JsonRpcException
+from channels_jsonrpc import JsonRpcWebsocketConsumer, JsonRpcWebsocketConsumerTest, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumer
 
@@ -256,7 +256,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
     def test_jsonRpcexception_dumping(self):
         import json
         exception = JsonRpcException(1, JsonRpcWebsocketConsumer.GENERIC_APPLICATION_ERROR, data="test_data")
-        json_res= json.loads(str(exception))
+        json_res = json.loads(str(exception))
         self.assertEqual(json_res["id"], 1)
         self.assertEqual(json_res["jsonrpc"], "2.0")
         self.assertEqual(json_res["error"]["data"], "test_data")

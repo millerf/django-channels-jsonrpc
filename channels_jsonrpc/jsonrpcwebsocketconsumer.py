@@ -1,5 +1,6 @@
 from channels.generic.websockets import WebsocketConsumer
 import json
+from threading import Thread
 from six import string_types
 
 
@@ -39,7 +40,12 @@ class JsonRpcException(Exception):
         return json.dumps(self.as_dict())
 
 
+
 class JsonRpcWebsocketConsumer(WebsocketConsumer):
+
+    TEST_MODE = False
+
+
     """
     Variant of WebsocketConsumer that automatically JSON-encodes and decodes
     messages as they come in and go out. Expects everything to be text; will
@@ -128,35 +134,45 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :return:
         """
 
-        if "text" in message:
-            try:
-                data = json.loads(message['text'])
-                if isinstance(data, dict):
+        def __thread(message_content):
+            result = ''
+            if message_content is not None:
+                try:
+                    data = json.loads(message_content)
+                    if isinstance(data, dict):
 
-                    if data.get('method') is not None and data.get('params') is not None and not data.get('id'):
-                        # notification, we don't support it just yet
-                        return
+                        if data.get('method') is not None and data.get('params') is not None and not data.get('id'):
+                            # notification, we don't support it just yet
+                            return
 
-                    try:
-                        result = self.__process(data)
-                    except JsonRpcException as e:
-                        result = e.as_dict()
-                    except Exception as e:
-                        result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), json.dumps(e.args))
+                        try:
+                            result = self.__process(data)
+                        except JsonRpcException as e:
+                            result = e.as_dict()
+                        except Exception as e:
+                            result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), json.dumps(e.args))
 
-                elif isinstance(data, list):
-                    if len([x for x in data if not isinstance(x, dict)]):
-                        result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
-            except ValueError as e:
-                # json could not decoded
-                result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
-            except Exception as e:
+                    elif isinstance(data, list):
+                        if len([x for x in data if not isinstance(x, dict)]):
+                            result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
+                except ValueError as e:
+                    # json could not decoded
+                    result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
+                except Exception as e:
+                    result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
+
+            else:
                 result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
-        else:
-            result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
+            self.send(result)
 
-        self.send(result)
+        content = None if "text" not in message else message["text"]
+        t = Thread(target=__thread, args=(content,))
+        t.start()
+        if self.TEST_MODE:
+            import time
+            time.sleep(1)
+            t.join()
 
     def send(self, content, close=False):
         """
@@ -212,3 +228,8 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             'jsonrpc': '2.0',
             'result': result,
         }
+
+
+class JsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
+
+    TEST_MODE = True
