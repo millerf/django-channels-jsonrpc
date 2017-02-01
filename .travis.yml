@@ -1,21 +1,14 @@
 language: python
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
 install:
 - pip install tox
 script:
 - tox
 env:
-- TOXENV=py27-django18
-- TOXENV=py27-django19
-- TOXENV=py27-django110
-- TOXENV=py34-django18
-- TOXENV=py34-django19
-- TOXENV=py34-django110
-- TOXENV=py35-django18
-- TOXENV=py35-django19
-- TOXENV=py35-django110
-- TOXENV=py36-django18
-- TOXENV=py36-django19
-- TOXENV=py36-django110
+- TOXENV=testenv
 - TOXENV=coverage
 notifications:
   slack:
