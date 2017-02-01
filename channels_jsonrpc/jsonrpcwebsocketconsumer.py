@@ -170,8 +170,6 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         t = Thread(target=__thread, args=(content,))
         t.start()
         if self.TEST_MODE:
-            import time
-            time.sleep(1)
             t.join()
 
     def send(self, content, close=False):
