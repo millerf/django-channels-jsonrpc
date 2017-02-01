@@ -246,8 +246,8 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         def method2():
           pass
 
-        self.assertEquals(Context1.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method1'])
-        self.assertEquals(Context2.TestNamesakeJsonRpcConsumer.get_rpc_methods(), ['method2'])
+        self.assertEquals(Context1.TestNamesakeJsonRpcConsumer2.get_rpc_methods(), ['method1'])
+        self.assertEquals(Context2.TestNamesakeJsonRpcConsumer2.get_rpc_methods(), ['method2'])
 
     def test_no_rpc_methods(self):
         class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
