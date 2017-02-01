@@ -19,11 +19,18 @@ notifications:
     on_success: change
     on_failure: always
 deploy:
-  provider: pypi
-  user: millerf
-  password:
-    secure: fge3nWckd/APmSonDR8cyODVAmMiDWrA46fG1C9RzYyupDhtLOImtb2UdWaYfJECCO+Sc5LqM+mw9lfXFiLn0wput4zSzQgH7tu9IC4HeAHuD7QCZm0eZZGn6TKP0NyI7M4Dy/hbAsqMNyTvQQv1V9mhce4sLy7lyfZytY/jQx1a6TkdzY8tjWhovk5FBPGTQfqusHLv9QiWtwxA4nZvJVMu68Tf0BIYCvUXUziCTBk0A/gvICfyjO7lMK45E+MwNKP+A4zUm1y/ya1Ppq6mHMOXTXYBqE1D2WQyVDkaoGjuDCqblz1/0yvZN9Wql8X26XU88CApZVG/SEqc6Mf6eW3YxyRzaUWlQNlZlCnfYE+Czil2/ndRd9IhToWdvpvgARrzRS7tO0vuAgAt05Eg8q8vwByJt329TeS8hMIqgvHYaMqRfdo21a0ZESJHXagSvDNVE9UnM1wgfO29ENKy0aWorYB8dUxUkVGO1Dy8dq7F3Lss+Vy9NPwfi9mZi5W2TUJe8rh+C91S9OcRkrqoiAOC1rv9uxeqGND6vWQ6JL4fguqpDDvllmB1wkTg46vV++42J0fkTUBfd9YrSxdg/eSN+voCgMmL6cTK+mdbvHVTZzgbk3gAZ7Tvds80mh2OjkUctJl56RMowhDmHQHoipFnQ9phLwvNTxf/x5OByV0=
-  on:
-    tags: true
-    distributions: sdist bdist_wheel
-    repo: millerf/django-channels-jsonrpc
+    - provider: pypi
+      user: millerf
+      password:
+        secure: fge3nWckd/APmSonDR8cyODVAmMiDWrA46fG1C9RzYyupDhtLOImtb2UdWaYfJECCO+Sc5LqM+mw9lfXFiLn0wput4zSzQgH7tu9IC4HeAHuD7QCZm0eZZGn6TKP0NyI7M4Dy/hbAsqMNyTvQQv1V9mhce4sLy7lyfZytY/jQx1a6TkdzY8tjWhovk5FBPGTQfqusHLv9QiWtwxA4nZvJVMu68Tf0BIYCvUXUziCTBk0A/gvICfyjO7lMK45E+MwNKP+A4zUm1y/ya1Ppq6mHMOXTXYBqE1D2WQyVDkaoGjuDCqblz1/0yvZN9Wql8X26XU88CApZVG/SEqc6Mf6eW3YxyRzaUWlQNlZlCnfYE+Czil2/ndRd9IhToWdvpvgARrzRS7tO0vuAgAt05Eg8q8vwByJt329TeS8hMIqgvHYaMqRfdo21a0ZESJHXagSvDNVE9UnM1wgfO29ENKy0aWorYB8dUxUkVGO1Dy8dq7F3Lss+Vy9NPwfi9mZi5W2TUJe8rh+C91S9OcRkrqoiAOC1rv9uxeqGND6vWQ6JL4fguqpDDvllmB1wkTg46vV++42J0fkTUBfd9YrSxdg/eSN+voCgMmL6cTK+mdbvHVTZzgbk3gAZ7Tvds80mh2OjkUctJl56RMowhDmHQHoipFnQ9phLwvNTxf/x5OByV0=
+      on:
+        tags: true
+        distributions: sdist bdist_wheel
+        repo: millerf/django-channels-jsonrpc
+
+    - provider: releases
+      api_key:
+        secure: eWNcRlFoImCTciWy4YNCCtNbn2Klu9Q8kOAu5Stusobve+LdkuWrXwxDamtCMAoKfVR76ckQHdWIoTKxQYyIrZzHGneOCZcnnvdPN8olOW9ll3VHS6l1tuPW/LXmJ/Syqwm+4vFItspW5EJvaawhK3ETBJBA4A3TdbxpAWTAmAXG/aSSKodYjiAv7ZOKEP9fXfKIGu0rDd0ZGf37cqZ4OIuMM3GYE+AGL6mINwbhgdtag5v1LhpmghqW0kHWhDPlYRqZWe971cGt0HXxGpWqALthTmQTPfz5qXQ6eqZRsqGTv8xRWZo7kqqW53dKs8uVXltAErWNIkjzSkys8PchiwLogHg8Y6TdHo77xeMCXCDKz8qroFmRO4aj12/MVJMsCo2vNiVTbHzdzpy0NHp4p4ZyGFcjBYnmH7K1THWcWkRUILSjsVUhgG+jO2NdzAzADUai8HdLS1Jexmiq1YUMX8N53oseoSjBz1iuKJFWEDL+i/nERE813nyjtrs4jYYQ8BORWkJ/dTiZf8h28F83kgIkA8Rfl8U8hXqYgXW/K7fE2z5xlVLUthFbxOCGYXbRwZi+kUD8oo54mD0MO1moviLQQBdE6k+QUNyA7R4cMJC4YnAr3ZIzxNWzzPHCkFD7dfJOv/fxQ8nfRSVvKk+xTwA7SZ9tjff3m0KalLCS7xs=
+      file: dist/django-channels-*.tar.gz
+      on:
+        repo: millerf/django-channels-jsonrpc
