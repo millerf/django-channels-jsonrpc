@@ -8,7 +8,7 @@ install:
 script:
 - tox
 env:
-- TOXENV=testenv
+- TOXENV=
 - TOXENV=coverage
 notifications:
   slack:
