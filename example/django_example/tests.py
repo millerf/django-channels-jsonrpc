@@ -238,11 +238,11 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
             class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
 
-        @Context1.TestNamesakeJsonRpcConsumer.rpc_method()
+        @Context1.TestNamesakeJsonRpcConsumer2.rpc_method()
         def method1():
           pass
 
-        @Context2.TestNamesakeJsonRpcConsumer.rpc_method()
+        @Context2.TestNamesakeJsonRpcConsumer2.rpc_method()
         def method2():
           pass
 
