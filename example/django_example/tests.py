@@ -228,12 +228,14 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_namesake_consumers(self):
 
+        # Changed name to TestNamesakeJsonRpcConsumer2 to prevent overlapping with "previous" TestMyJsonRpcConsumer
+
         class Context1():
-            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+            class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
 
         class Context2():
-            class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+            class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
 
         @Context1.TestNamesakeJsonRpcConsumer.rpc_method()
