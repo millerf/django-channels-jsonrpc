@@ -27,29 +27,15 @@ class JsonRpcException(Exception):
         return JsonRpcWebsocketConsumer.errors[self.code]
 
     def as_dict(self):
-        if self.data:
-            return {
-                    'id': self.rpc_id,
-                    'jsonrpc': '2.0',
-                    'error': {'code': self.code,
-                              'message': self.message,
-                              'data': self.data}}
-        else:
-            return {
-                    'id': self.rpc_id,
-                    'jsonrpc': '2.0',
-                    'error': {'code': self.code,
-                              'message': self.message}}
+        return JsonRpcWebsocketConsumer.error(self.rpc_id, self.code, self.message, self.data)
 
     def __str__(self):
         return json.dumps(self.as_dict())
 
 
-
 class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
     TEST_MODE = False
-
 
     """
     Variant of WebsocketConsumer that automatically JSON-encodes and decodes
@@ -121,15 +107,13 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :param data: (optional) error data
         :return: object
         """
-        error_obj = {'code': code, 'message': message}
-        if data is not None:
-            error_obj['data'] = data
+        error = {'jsonrpc': '2.0', "error": {'code': code, 'message': message}}
+        if data:
+            error["error"]["data"] = data
+        if _id:
+            error["id"] = _id
 
-        return {
-                    'id': _id,
-                    'jsonrpc': '2.0',
-                    'error': error_obj
-                    }
+        return error
 
     def raw_receive(self, message, **kwargs):
         """

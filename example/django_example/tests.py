@@ -27,7 +27,8 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(response['error'], {u'code': JsonRpcWebsocketConsumerTest.INVALID_REQUEST,
                                              u'message': JsonRpcWebsocketConsumerTest.errors[JsonRpcWebsocketConsumerTest.INVALID_REQUEST]})
         self.assertEqual(response['jsonrpc'], '2.0')
-        self.assertEqual(response['id'], None)
+        if 'id' in response:
+            self.assertEqual(response['id'], None)
 
     def test_inadequate_request(self):
 
