@@ -2,6 +2,11 @@ from channels.generic.websockets import WebsocketConsumer
 import json
 from threading import Thread
 from six import string_types
+# import the logging library
+import logging
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 
 class JsonRpcException(Exception):

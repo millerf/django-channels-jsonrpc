@@ -1,5 +1,9 @@
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest
+# import the logging library
+import logging
 
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
 
@@ -19,7 +23,7 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
         Perform things on connection start
         """
         self.message.reply_channel.send({"accept": True})
-        print("connect")
+        logger.info("connect")
 
         # Do stuff if needed
 
@@ -27,7 +31,7 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
         """
         Perform things on connection close
         """
-        print("disconnect")
+        logger.info("disconnect")
 
         # Do stuff if needed
 
