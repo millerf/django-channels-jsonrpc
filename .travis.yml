@@ -32,10 +32,10 @@ deploy:
         distributions: sdist bdist_wheel
         repo: millerf/django-channels-jsonrpc
 
-    - provider: releases
-      api_key:
-        secure: eWNcRlFoImCTciWy4YNCCtNbn2Klu9Q8kOAu5Stusobve+LdkuWrXwxDamtCMAoKfVR76ckQHdWIoTKxQYyIrZzHGneOCZcnnvdPN8olOW9ll3VHS6l1tuPW/LXmJ/Syqwm+4vFItspW5EJvaawhK3ETBJBA4A3TdbxpAWTAmAXG/aSSKodYjiAv7ZOKEP9fXfKIGu0rDd0ZGf37cqZ4OIuMM3GYE+AGL6mINwbhgdtag5v1LhpmghqW0kHWhDPlYRqZWe971cGt0HXxGpWqALthTmQTPfz5qXQ6eqZRsqGTv8xRWZo7kqqW53dKs8uVXltAErWNIkjzSkys8PchiwLogHg8Y6TdHo77xeMCXCDKz8qroFmRO4aj12/MVJMsCo2vNiVTbHzdzpy0NHp4p4ZyGFcjBYnmH7K1THWcWkRUILSjsVUhgG+jO2NdzAzADUai8HdLS1Jexmiq1YUMX8N53oseoSjBz1iuKJFWEDL+i/nERE813nyjtrs4jYYQ8BORWkJ/dTiZf8h28F83kgIkA8Rfl8U8hXqYgXW/K7fE2z5xlVLUthFbxOCGYXbRwZi+kUD8oo54mD0MO1moviLQQBdE6k+QUNyA7R4cMJC4YnAr3ZIzxNWzzPHCkFD7dfJOv/fxQ8nfRSVvKk+xTwA7SZ9tjff3m0KalLCS7xs=
-      file_glob: true
-      file: "${RELEASE_PKG_FILE}"
-      on:
-        repo: millerf/django-channels-jsonrpc
+ #   - provider: releases
+ #     api_key:
+ #       secure: eWNcRlFoImCTciWy4YNCCtNbn2Klu9Q8kOAu5Stusobve+LdkuWrXwxDamtCMAoKfVR76ckQHdWIoTKxQYyIrZzHGneOCZcnnvdPN8olOW9ll3VHS6l1tuPW/LXmJ/Syqwm+4vFItspW5EJvaawhK3ETBJBA4A3TdbxpAWTAmAXG/aSSKodYjiAv7ZOKEP9fXfKIGu0rDd0ZGf37cqZ4OIuMM3GYE+AGL6mINwbhgdtag5v1LhpmghqW0kHWhDPlYRqZWe971cGt0HXxGpWqALthTmQTPfz5qXQ6eqZRsqGTv8xRWZo7kqqW53dKs8uVXltAErWNIkjzSkys8PchiwLogHg8Y6TdHo77xeMCXCDKz8qroFmRO4aj12/MVJMsCo2vNiVTbHzdzpy0NHp4p4ZyGFcjBYnmH7K1THWcWkRUILSjsVUhgG+jO2NdzAzADUai8HdLS1Jexmiq1YUMX8N53oseoSjBz1iuKJFWEDL+i/nERE813nyjtrs4jYYQ8BORWkJ/dTiZf8h28F83kgIkA8Rfl8U8hXqYgXW/K7fE2z5xlVLUthFbxOCGYXbRwZi+kUD8oo54mD0MO1moviLQQBdE6k+QUNyA7R4cMJC4YnAr3ZIzxNWzzPHCkFD7dfJOv/fxQ8nfRSVvKk+xTwA7SZ9tjff3m0KalLCS7xs=
+ #     file_glob: true
+ #     file: "${RELEASE_PKG_FILE}"
+ #     on:
+ #       repo: millerf/django-channels-jsonrpc
