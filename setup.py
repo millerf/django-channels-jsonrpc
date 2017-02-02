@@ -17,6 +17,7 @@ setup(
     include_package_data=True,
     license='MIT License',
     description='A JSON-RPC implementation for Django channels consumer.',
+    long_description='Works with django channels. See README on gihub repo',
     url='https://github.com/millerf/django-channels-jsonrpc/',
     author='Fabien Millerand - MILLER/f',
     author_email='fab@millerf.com',
