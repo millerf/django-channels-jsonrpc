@@ -159,10 +159,11 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             self.send(result)
 
         content = None if "text" not in message else message["text"]
-        t = Thread(target=__thread, args=(content,))
-        t.start()
-        if self.TEST_MODE:
-            t.join()
+        if not self.TEST_MODE:
+            t = Thread(target=__thread, args=(content,))
+            t.start()
+        else:
+            __thread(content)
 
     def send(self, content, close=False):
         """
