@@ -139,7 +139,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                         except JsonRpcException as e:
                             result = e.as_dict()
                         except Exception as e:
-                            result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), json.dumps(e.args))
+                            result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), e.args)
 
                     elif isinstance(data, list):
                         if len([x for x in data if not isinstance(x, dict)]):
