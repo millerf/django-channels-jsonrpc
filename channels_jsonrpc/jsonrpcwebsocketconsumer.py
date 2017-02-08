@@ -108,7 +108,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :return: object
         """
         error = {'jsonrpc': '2.0', "error": {'code': code, 'message': message}}
-        if data:
+        if data is not None:
             error["error"]["data"] = data
         if _id:
             error["id"] = _id
@@ -139,7 +139,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                         except JsonRpcException as e:
                             result = e.as_dict()
                         except Exception as e:
-                            result = self.error(data.get('id'), self.GENERIC_APPLICATION_ERROR, str(e), e.args)
+                            result = self.error(data.get('id'),
+                                                self.GENERIC_APPLICATION_ERROR,
+                                                str(e),
+                                                e.args[0] if len(e.args) == 1 else e.args)
 
                     elif isinstance(data, list):
                         if len([x for x in data if not isinstance(x, dict)]):
