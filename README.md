@@ -127,8 +127,35 @@ def ping(fake_an_error):
 The JsonRpcWebsocketConsumer class can be tested the same way Channels Consumers are tested.
 See [here](http://channels.readthedocs.io/en/stable/testing.html)
 
+You just need to remember to set your JsonRpcConsumer class to TEST_MODE in the test:
+
+```python
+from channels.tests import ChannelTestCase, HttpClient
+from .consumer import MyJsonRpcWebsocketConsumer
+
+MyJsonRpcWebsocketConsumer.TEST_MODE = True
 
 
+
+class TestsJsonConsumer(ChannelTestCase):
+    def assertResult(self, method, params, result, error=False):
+        client = HttpClient()
+        client.send_and_consume('websocket.receive', text=request(method, params))
+        key = "result" if not error else "error"
+        message = client.receive()
+        if message is None or key not in message:
+            raise KeyError("'%s' key not in message: %s" % (key, message))
+
+        self.assertEquals(message[key], result)
+
+    def assertError(self, method, params, result):
+        self.assertResult(method, params, result, True)
+
+    def test_assert_result(self):
+
+         self.assertResult("ping", {},
+                           "pong")
+```
 
 ## License
 

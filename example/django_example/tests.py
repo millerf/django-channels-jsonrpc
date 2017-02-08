@@ -175,13 +175,11 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         msg = client.receive()
         self.assertEqual(msg['id'], 52)
 
-
     def test_get_rpc_methods(self):
 
         @TestMyJsonRpcConsumer.rpc_method()
         def ping3():
             return "pong3"
-
 
         @TestMyJsonRpcConsumer2.rpc_method()
         def ping4():
