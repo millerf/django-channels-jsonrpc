@@ -11,6 +11,11 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
     strict_ordering = False
     slight_ordering = False
 
+    # Set to True to automatically port users from HTTP cookies
+    # (you don't need channel_session_user, this implies it)
+    # https://channels.readthedocs.io/en/stable/generics.html#websockets
+    http_user = True
+
     def connection_groups(self, **kwargs):
         """
         Called to return the list of groups to automatically add/remove

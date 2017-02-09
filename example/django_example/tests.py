@@ -10,6 +10,7 @@ class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
 class TestMyJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
     pass
 
+
 class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_connection(self):
@@ -111,14 +112,16 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(client.receive(), None)
 
     def test_method(self):
+
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
         def ping2():
             return "pong2"
 
         client = HttpClient()
-
         client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping2", "params":{}}')
+
         msg = client.receive()
+
         self.assertEqual(msg['result'], "pong2")
 
     def test_parsing_with_good_request_wrong_params(self):
@@ -150,6 +153,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(msg['error'], {u'code': JsonRpcWebsocketConsumerTest.INVALID_PARAMS,
                                                      u'message': JsonRpcWebsocketConsumerTest.errors[
                                                          JsonRpcWebsocketConsumerTest.INVALID_PARAMS]})
+
     def test_parsing_with_good_request(self):
         # Test that parsing a ping request works
         client = HttpClient()
@@ -265,4 +269,49 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(json_res["jsonrpc"], "2.0")
         self.assertEqual(json_res["error"]["data"], [True, "test"])
         self.assertEqual(json_res["error"]["code"], JsonRpcWebsocketConsumerTest.GENERIC_APPLICATION_ERROR)
+
+    def test_session_pass_param(self):
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_set_session():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            original_message.channel_session["test"] = True
+            return "pong_set_session"
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_get_session():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            self.assertEqual(original_message.channel_session["test"], True)
+            return "pong_get_session"
+
+        client = HttpClient()
+        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping_set_session", "params":{}}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], "pong_set_session")
+        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping_get_session", "params":{}}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], "pong_get_session")
+
+    def test_Session(self):
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_set_session2():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            original_message.channel_session["test"] = True
+            return "pong_set_session2"
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_get_session2():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            self.assertNotIn("test", original_message.channel_session)
+            return "pong_get_session2"
+
+        client = HttpClient()
+        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping_set_session2", "params":{}}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], "pong_set_session2")
+
+        client2 = HttpClient()
+        client2.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"ping_get_session2", "params":{}}')
+        msg = client2.receive()
+        self.assertEqual(msg['result'], "pong_get_session2")
 

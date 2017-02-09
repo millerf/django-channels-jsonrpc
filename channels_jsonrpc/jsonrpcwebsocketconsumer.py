@@ -33,8 +33,13 @@ class JsonRpcException(Exception):
         return json.dumps(self.as_dict())
 
 
+# Original message that can be retrieved by the JSON-RPC method (for sessions,...)
+original_message = None
+
+
 class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
+    # TEST_MODE: enable the multithreading. Put to TRUE while testing
     TEST_MODE = False
 
     """
@@ -123,7 +128,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :return:
         """
 
-        def __thread(message_content):
+        def __thread(message_content, message):
             result = ''
             if message_content is not None:
                 try:
@@ -135,7 +140,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                             return
 
                         try:
-                            result = self.__process(data)
+                            result = self.__process(data, message)
                         except JsonRpcException as e:
                             result = e.as_dict()
                         except Exception as e:
@@ -160,10 +165,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
         content = None if "text" not in message else message["text"]
         if not self.TEST_MODE:
-            t = Thread(target=__thread, args=(content,))
+            t = Thread(target=__thread, args=(content, message))
             t.start()
         else:
-            __thread(content)
+            __thread(content, message)
 
     def send(self, content, close=False):
         """
@@ -176,7 +181,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         WebsocketConsumer.group_send(name, json.dumps(content), close=close)
 
     @classmethod
-    def __process(cls, data):
+    def __process(cls, data, original_msg):
         """
         Process the recived data
         :param data: object
@@ -212,7 +217,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         elif isinstance(params, dict):
             kwargs.update(params)
 
+        global original_message
+        original_message = original_msg
         result = method(*args, **kwargs)
+        original_message = None
 
         return {
             'id': data.get('id'),
