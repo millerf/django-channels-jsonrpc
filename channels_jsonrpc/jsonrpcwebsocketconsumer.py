@@ -89,6 +89,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             if id(cls) not in cls.available_rpc_methods:
                 cls.available_rpc_methods[id(cls)] = dict()
             cls.available_rpc_methods[id(cls)][name] = f
+            return f
         return wrap
 
     @classmethod
