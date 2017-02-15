@@ -147,6 +147,15 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
 
 ```
 
+## Custom JSON encoder class
+
+```python
+from django.core.serializers.json import DjangoJSONEncoder
+
+
+class DjangoJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
+    json_encoder_class = DjangoJSONEncoder
+```
 
 ## Testing
 

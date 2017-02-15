@@ -1,6 +1,8 @@
+from datetime import datetime
+
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
-from .consumer import MyJsonRpcWebsocketConsumerTest
+from .consumer import MyJsonRpcWebsocketConsumerTest, DjangoJsonRpcWebsocketConsumerTest
 
 
 class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
@@ -315,3 +317,28 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         msg = client2.receive()
         self.assertEqual(msg['result'], "pong_get_session2")
 
+    def test_custom_json_encoder(self):
+        some_date = datetime.utcnow()
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def test_method():
+            return {
+                'date': some_date
+            }
+
+        client = HttpClient()
+        try:
+            client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"test_method", "params":{}}')
+            self.fail('Looks like test does not work')
+        except TypeError:
+            pass
+
+        @DjangoJsonRpcWebsocketConsumerTest.rpc_method()
+        def test_method1():
+            return {
+                'date': some_date
+            }
+
+        client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"test_method1", "params":{}}', path='/django/')
+        msg = client.receive()
+        self.assertEqual(msg['result'], {u'date': some_date.isoformat()[:-3]})

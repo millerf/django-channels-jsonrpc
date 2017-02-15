@@ -1,6 +1,7 @@
-from .consumer import MyJsonRpcWebsocketConsumerTest
+from .consumer import MyJsonRpcWebsocketConsumerTest, DjangoJsonRpcWebsocketConsumerTest
 
 
 channel_routing = [
-    MyJsonRpcWebsocketConsumerTest.as_route(path=r"")
+    DjangoJsonRpcWebsocketConsumerTest.as_route(path=r"^/django/$"),
+    MyJsonRpcWebsocketConsumerTest.as_route(path=r""),
 ]
