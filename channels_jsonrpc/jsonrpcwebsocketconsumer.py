@@ -145,6 +145,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                         except JsonRpcException as e:
                             result = e.as_dict()
                         except Exception as e:
+                            logger.exception('Application error')
                             result = self.error(data.get('id'),
                                                 self.GENERIC_APPLICATION_ERROR,
                                                 str(e),
