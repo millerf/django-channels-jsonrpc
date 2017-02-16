@@ -234,6 +234,22 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(msg['error']['code'], JsonRpcWebsocketConsumerTest.GENERIC_APPLICATION_ERROR)
         self.assertEqual(msg['error']['data'], ['test_data', True])
 
+
+    def test_JsonRpcWebsocketConsumerTest_clean(self):
+
+        class TestNamesakeJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
+            pass
+
+        @TestNamesakeJsonRpcConsumer.rpc_method()
+        def method_34():
+            pass
+
+        self.assertIn("method_34", TestNamesakeJsonRpcConsumer.get_rpc_methods())
+
+        TestNamesakeJsonRpcConsumer.clean()
+
+        self.assertEquals(TestNamesakeJsonRpcConsumer.get_rpc_methods(), [])
+
     def test_namesake_consumers(self):
 
         # Changed name to TestNamesakeJsonRpcConsumer2 to prevent overlapping with "previous" TestMyJsonRpcConsumer
@@ -245,6 +261,9 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         class Context2():
             class TestNamesakeJsonRpcConsumer2(JsonRpcWebsocketConsumerTest):
                 pass
+
+        Context1.TestNamesakeJsonRpcConsumer2.clean()
+        Context2.TestNamesakeJsonRpcConsumer2.clean()
 
         @Context1.TestNamesakeJsonRpcConsumer2.rpc_method()
         def method1():
