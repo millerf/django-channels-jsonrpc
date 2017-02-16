@@ -1,3 +1,5 @@
+from django.core.serializers.json import DjangoJSONEncoder
+
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest
 # import the logging library
 import logging
@@ -52,3 +54,7 @@ def ping(fake_an_error):
         #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
         #  <-- {"id": 1, "jsonrpc": "2.0", "result": "pong"}
         return "pong"
+
+
+class DjangoJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
+    json_encoder_class = DjangoJSONEncoder

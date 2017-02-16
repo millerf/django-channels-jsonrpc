@@ -75,6 +75,8 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
     errors[INTERNAL_ERROR] = "Internal Error"
     errors[GENERIC_APPLICATION_ERROR] = "Application Error"
 
+    json_encoder_class = None
+
     available_rpc_methods = dict()
 
     @classmethod
@@ -145,6 +147,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                         except JsonRpcException as e:
                             result = e.as_dict()
                         except Exception as e:
+                            logger.exception('Application error')
                             result = self.error(data.get('id'),
                                                 self.GENERIC_APPLICATION_ERROR,
                                                 str(e),
@@ -175,11 +178,11 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         """
         Encode the given content as JSON and send it to the client.
         """
-        super(JsonRpcWebsocketConsumer, self).send(text=json.dumps(content), close=close)
+        super(JsonRpcWebsocketConsumer, self).send(text=json.dumps(content, cls=self.json_encoder_class), close=close)
 
     @classmethod
     def group_send(cls, name, content, close=False):
-        WebsocketConsumer.group_send(name, json.dumps(content), close=close)
+        WebsocketConsumer.group_send(name, json.dumps(content, cls=cls.json_encoder_class), close=close)
 
     @classmethod
     def __process(cls, data, original_msg):
