@@ -118,7 +118,7 @@ def ping(fake_an_error):
 ```
 
 ## Sessions and other parameters from Message object
-The original channel message - that can contains sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by importing it from the package in a json_rpc method:
+The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by importing it from the package in a json_rpc method:
 
 ```python
 MyJsonRpcWebsocketConsumerTest.rpc_method()
