@@ -7,6 +7,7 @@ import logging
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
+
 class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
 
     # Set to True if you want them, else leave out
@@ -41,6 +42,16 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
         logger.info("disconnect")
 
         # Do stuff if needed
+
+    def process(cls, data, original_msg):
+        """
+        Made to test thread-safe
+        :param data:
+        :param original_msg:
+        :return:
+        """
+        return cls.__process(data, original_msg)
+
 
 @MyJsonRpcWebsocketConsumerTest.rpc_method()
 def ping(fake_an_error):

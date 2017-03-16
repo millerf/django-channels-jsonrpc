@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from django.test import TransactionTestCase
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumerTest, DjangoJsonRpcWebsocketConsumerTest
@@ -361,3 +361,33 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         client.send_and_consume(u'websocket.receive', text='{"id":1, "jsonrpc":"2.0", "method":"test_method1", "params":{}}', path='/django/')
         msg = client.receive()
         self.assertEqual(msg['result'], {u'date': some_date.isoformat()[:-3]})
+
+    def test_message_is_not_thread_safe(self):
+        import time
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping2():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            return original_message
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping3():
+            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+            return original_message
+
+        def thread_test():
+            for _i in range(0, 10000):
+                _res = MyJsonRpcWebsocketConsumerTest._JsonRpcWebsocketConsumer__process(
+                    {"id": 1, "jsonrpc": "2.0", "method": "ping3", "params": []}, "test%s" % i)
+                self.assertEqual(_res['result'], "test%s" % i)
+
+
+        import threading
+        threading._start_new_thread(thread_test, ())
+
+        for i in range(0, 10000):
+            res = MyJsonRpcWebsocketConsumerTest._JsonRpcWebsocketConsumer__process(
+                {"id": 1, "jsonrpc": "2.0", "method": "ping2", "params": []}, "test%s" % i)
+            self.assertEqual(res['result'], "test%s" % i)
+
+
