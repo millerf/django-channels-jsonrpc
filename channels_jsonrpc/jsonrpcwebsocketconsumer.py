@@ -2,6 +2,7 @@ from channels.generic.websockets import WebsocketConsumer
 import json
 from threading import Thread
 from six import string_types
+from inspect import getargspec
 # import the logging library
 import logging
 
@@ -31,10 +32,6 @@ class JsonRpcException(Exception):
 
     def __str__(self):
         return json.dumps(self.as_dict())
-
-
-# Original message that can be retrieved by the JSON-RPC method (for sessions,...)
-original_message = None
 
 
 class JsonRpcWebsocketConsumer(WebsocketConsumer):
@@ -221,10 +218,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         elif isinstance(params, dict):
             kwargs.update(params)
 
-        global original_message
-        original_message = original_msg
+        func_args, _, _, _ = getargspec(method)
+        if 'original_message' in func_args:
+            kwargs['original_message'] = original_msg
         result = method(*args, **kwargs)
-        original_message = None
 
         return {
             'id': data.get('id'),

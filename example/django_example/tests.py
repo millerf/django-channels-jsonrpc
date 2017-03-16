@@ -293,14 +293,12 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_session_pass_param(self):
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_set_session():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping_set_session(original_message):
             original_message.channel_session["test"] = True
             return "pong_set_session"
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_get_session():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping_get_session(original_message):
             self.assertEqual(original_message.channel_session["test"], True)
             return "pong_get_session"
 
@@ -315,14 +313,12 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
     def test_Session(self):
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_set_session2():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping_set_session2(original_message):
             original_message.channel_session["test"] = True
             return "pong_set_session2"
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_get_session2():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping_get_session2(original_message):
             self.assertNotIn("test", original_message.channel_session)
             return "pong_get_session2"
 
@@ -366,21 +362,18 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         import time
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping2():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping2(original_message):
             return original_message
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping3():
-            from channels_jsonrpc.jsonrpcwebsocketconsumer import original_message
+        def ping3(original_message):
             return original_message
 
         def thread_test():
             for _i in range(0, 10000):
                 _res = MyJsonRpcWebsocketConsumerTest._JsonRpcWebsocketConsumer__process(
-                    {"id": 1, "jsonrpc": "2.0", "method": "ping3", "params": []}, "test%s" % i)
-                self.assertEqual(_res['result'], "test%s" % i)
-
+                    {"id": 1, "jsonrpc": "2.0", "method": "ping3", "params": []}, "test%s" % _i)
+                self.assertEqual(_res['result'], "test%s" % _i)
 
         import threading
         threading._start_new_thread(thread_test, ())
