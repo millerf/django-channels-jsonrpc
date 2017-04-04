@@ -382,4 +382,24 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                 {"id": 1, "jsonrpc": "2.0", "method": "ping2", "params": []}, "test%s" % i)
             self.assertEqual(res['result'], "test%s" % i)
 
+    def test_original_message_position_safe(self):
 
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_set_session(name, original_message, value):
+            original_message.channel_session["test"] = True
+            return ["pong_set_session", value, name]
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping_get_session(original_message, value2, name2):
+            self.assertEqual(original_message.channel_session["test"], True)
+            return ["pong_get_session", value2, name2]
+
+        client = HttpClient()
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"ping_set_session", "params":["name_of_function", "value_of_function"]}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], ["pong_set_session", "value_of_function", "name_of_function"])
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"ping_get_session", "params":{"name2": "name2_of_function", "value2": "value2_of_function"}}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], ["pong_get_session", "value2_of_function", "name2_of_function"])

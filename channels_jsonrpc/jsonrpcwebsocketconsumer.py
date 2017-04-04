@@ -217,28 +217,29 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
-        args = []
-        kwargs = {}
-        if isinstance(params, list):
-            args = params
-        elif isinstance(params, dict):
-            kwargs.update(params)
-
         if sys.version_info < (3, 5):
             func_args, _, _, _ = getargspec(method)
         else:
             func_args, _, _, _, _, _, _ = getfullargspec(method)
 
-        if 'original_message' in func_args:
-            kwargs['original_message'] = original_msg
-        result = method(*args, **kwargs)
+        if isinstance(params, list):
+
+            # we make sure that it has the right size
+            args = params
+            if 'original_message' in func_args:
+                args.insert(func_args.index('original_message'), original_msg)
+            result = method(*args)
+        elif isinstance(params, dict):
+            kwargs = params
+            if 'original_message' in func_args:
+                kwargs['original_message'] = original_msg
+            result = method(**kwargs)
 
         return {
             'id': data.get('id'),
             'jsonrpc': '2.0',
             'result': result,
         }
-
 
 class JsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
 
