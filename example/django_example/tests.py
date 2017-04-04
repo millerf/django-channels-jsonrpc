@@ -359,7 +359,6 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         self.assertEqual(msg['result'], {u'date': some_date.isoformat()[:-3]})
 
     def test_message_is_not_thread_safe(self):
-        import time
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
         def ping2(original_message):

@@ -2,9 +2,15 @@ from channels.generic.websockets import WebsocketConsumer
 import json
 from threading import Thread
 from six import string_types
-from inspect import getargspec
+import sys
 # import the logging library
 import logging
+
+if sys.version_info < (3, 5):
+    from inspect import getargspec
+else:
+    from inspect import getfullargspec
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -218,7 +224,11 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         elif isinstance(params, dict):
             kwargs.update(params)
 
-        func_args, _, _, _ = getargspec(method)
+        if sys.version_info < (3, 5):
+            func_args, _, _, _ = getargspec(method)
+        else:
+            func_args, _, _, _, _, _, _ = getfullargspec(method)
+
         if 'original_message' in func_args:
             kwargs['original_message'] = original_msg
         result = method(*args, **kwargs)
