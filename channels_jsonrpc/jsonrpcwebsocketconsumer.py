@@ -108,12 +108,12 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         return list(cls.available_rpc_methods[id(cls)].keys())
 
     @staticmethod
-    def __json_rpc_frame(_id=None, result=None, params=None, method=None, error=None):
+    def json_rpc_frame(_id=None, result=None, params=None, method=None, error=None):
         frame = {'jsonrpc': '2.0'}
         if _id is not None:
             frame["id"] = _id
         if method:
-            frame["result"] = result
+            frame["method"] = method
             frame["params"] = params
         elif result is not None:
             frame["result"] = result
@@ -138,7 +138,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         if data is not None:
             error["data"] = data
 
-        return JsonRpcWebsocketConsumer.__json_rpc_frame(error=error, _id=_id)
+        return JsonRpcWebsocketConsumer.json_rpc_frame(error=error, _id=_id)
 
     def raw_receive(self, message, **kwargs):
         """
@@ -198,8 +198,9 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         super(JsonRpcWebsocketConsumer, self).send(text=json.dumps(content, cls=self.json_encoder_class), close=close)
 
     @classmethod
-    def notify_group(cls, name, content, close=False):
-        WebsocketConsumer.group_send(name, json.dumps(content, cls=cls.json_encoder_class), close=close)
+    def notify_group(cls, group_name, method, params=None):
+        content = JsonRpcWebsocketConsumer.json_rpc_frame(method=method, params=params)
+        WebsocketConsumer.group_send(group_name, json.dumps(content, cls=cls.json_encoder_class))
 
     @classmethod
     def __process(cls, data, original_msg):
@@ -215,15 +216,15 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         if 'method' not in data:
             raise JsonRpcException(data.get('id'), cls.INVALID_REQUEST)
 
-        methodname = data['method']
-        if not isinstance(methodname, string_types):
+        method_name = data['method']
+        if not isinstance(method_name, string_types):
             raise JsonRpcException(data.get('id'), cls.INVALID_REQUEST)
 
-        if methodname.startswith('_'):
+        if method_name.startswith('_'):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
 
         try:
-            method = cls.available_rpc_methods[id(cls)][methodname]
+            method = cls.available_rpc_methods[id(cls)][method_name]
         except KeyError:
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
         params = data.get('params', [])
@@ -249,7 +250,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                 kwargs['original_message'] = original_msg
             result = method(**kwargs)
 
-        return JsonRpcWebsocketConsumer.__json_rpc_frame(result=result, _id=data.get('id'))
+        return JsonRpcWebsocketConsumer.json_rpc_frame(result=result, _id=data.get('id'))
 
 
 class JsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
