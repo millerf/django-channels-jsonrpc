@@ -2,6 +2,7 @@ from datetime import datetime
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumerTest, DjangoJsonRpcWebsocketConsumerTest
+from mock import patch
 
 
 class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
@@ -482,3 +483,26 @@ class TestsNotifications(ChannelTestCase):
         msg = client.receive()
         self.assertEqual(msg['method'], "notification.notif")
         self.assertEqual(msg['params'], {"payload": 1234})
+
+    def test_inbound_notifications(self):
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_notification()
+        def notif1(params):
+            self.assertEqual(params, {"payload": True})
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_notification('notif.notif2')
+        def notif2(params):
+            self.assertEqual(params, {"payload": 12345})
+
+        client = HttpClient()
+
+        # we send a notification to the server
+        client.send_and_consume(u'websocket.receive',
+                                text='{"jsonrpc":"2.0", "method":"notif1", "params":[{"payload": true}]}')
+        msg = client.receive()
+        self.assertEqual(msg, None)
+
+        # we test with method rewriting
+        client.send_and_consume(u'websocket.receive',
+                            text='{"jsonrpc":"2.0", "method":"notif.notif2", "params":[{"payload": 12345}]}')
+        self.assertEqual(msg, None)
