@@ -229,13 +229,32 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
     @classmethod
     def notify_group(cls, group_name, method, params=None):
+        """
+        Notify a group. Using JSON-RPC notificatons
+        :param group_name: Group name
+        :param method: JSON-RPC method
+        :param params: parmas of the method
+        :return:
+        """
         content = JsonRpcWebsocketConsumer.json_rpc_frame(method=method, params=params)
         WebsocketConsumer.group_send(group_name, json.dumps(content, cls=cls.json_encoder_class))
 
     @classmethod
+    def notify_channel(cls, reply_channel, method, params):
+        """
+                Notify a group. Using JSON-RPC notificatons
+                :param reply_channel: Reply channel
+                :param method: JSON-RPC method
+                :param params: parmas of the method
+                :return:
+                """
+        content = JsonRpcWebsocketConsumer.json_rpc_frame(method=method, params=params)
+        reply_channel.send(content)
+
+    @classmethod
     def __process_notification(cls, data, original_msg):
         """
-                Process the recived data
+                Process an inbound JSON-RPC notificaton
                 :param data: object
                 :return: object
                 """
@@ -291,7 +310,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
     @classmethod
     def __process(cls, data, original_msg):
         """
-        Process the recived data
+        Process the received data
         :param data: object
         :return: object
         """

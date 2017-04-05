@@ -419,6 +419,13 @@ class TestsNotifications(ChannelTestCase):
             MyJsonRpcWebsocketConsumerTest.notify_group(group_name, "notification.notif", {"payload": 1234})
             return True
 
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def send_to_reply_channel(original_message):
+            MyJsonRpcWebsocketConsumerTest.notify_channel(original_message.reply_channel,
+                                                        "notification.ownnotif",
+                                                        {"payload": 12})
+            return True
+
         def send_notif(_client):
             _client.send_and_consume(u'websocket.receive',
                                 text='{"id":1, "jsonrpc":"2.0", "method":"send_to_group", "params":["group_test"]}')
@@ -433,6 +440,17 @@ class TestsNotifications(ChannelTestCase):
 
         client = HttpClient()
         client2 = HttpClient()
+
+        # we test own reply channel
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"send_to_reply_channel", "params": []}')
+
+        msg = client.receive()
+        self.assertEquals(msg['method'], "notification.ownnotif")
+        self.assertEqual(msg['params'], {"payload": 12})
+
+        msg = client.receive()
+        self.assertEqual(msg['result'], True)
 
         # we add client to a group_test group
         client.send_and_consume(u'websocket.receive',
