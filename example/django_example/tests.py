@@ -2,7 +2,6 @@ from datetime import datetime
 from channels_jsonrpc import JsonRpcWebsocketConsumerTest, JsonRpcException
 from channels.tests import ChannelTestCase, HttpClient
 from .consumer import MyJsonRpcWebsocketConsumerTest, DjangoJsonRpcWebsocketConsumerTest
-from mock import patch
 
 
 class TestMyJsonRpcConsumer(JsonRpcWebsocketConsumerTest):
