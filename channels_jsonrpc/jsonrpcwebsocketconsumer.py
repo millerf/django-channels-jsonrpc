@@ -186,7 +186,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                             # notification, we don't support it just yet
                             try:
                                 self.__process_notification(data, message)
-                            except Exception, e:
+                            except Exception:
                                 pass
                             return
                         try:
