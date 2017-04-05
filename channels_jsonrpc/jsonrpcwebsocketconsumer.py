@@ -108,6 +108,22 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         return list(cls.available_rpc_methods[id(cls)].keys())
 
     @staticmethod
+    def __json_rpc_frame(_id=None, result=None, params=None, method=None, error=None):
+        frame = {'jsonrpc': '2.0'}
+        if _id is not None:
+            frame["id"] = _id
+        if method:
+            frame["result"] = result
+            frame["params"] = params
+        elif result is not None:
+            frame["result"] = result
+        elif error is not None:
+            frame["error"] = error
+
+        return frame
+
+
+    @staticmethod
     def error(_id, code, message, data=None):
 
         """
@@ -118,13 +134,11 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :param data: (optional) error data
         :return: object
         """
-        error = {'jsonrpc': '2.0', "error": {'code': code, 'message': message}}
+        error = {'code': code, 'message': message}
         if data is not None:
-            error["error"]["data"] = data
-        if _id:
-            error["id"] = _id
+            error["data"] = data
 
-        return error
+        return JsonRpcWebsocketConsumer.__json_rpc_frame(error=error, _id=_id)
 
     def raw_receive(self, message, **kwargs):
         """
@@ -184,7 +198,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         super(JsonRpcWebsocketConsumer, self).send(text=json.dumps(content, cls=self.json_encoder_class), close=close)
 
     @classmethod
-    def group_send(cls, name, content, close=False):
+    def notify_group(cls, name, content, close=False):
         WebsocketConsumer.group_send(name, json.dumps(content, cls=cls.json_encoder_class), close=close)
 
     @classmethod
@@ -235,11 +249,8 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                 kwargs['original_message'] = original_msg
             result = method(**kwargs)
 
-        return {
-            'id': data.get('id'),
-            'jsonrpc': '2.0',
-            'result': result,
-        }
+        return JsonRpcWebsocketConsumer.__json_rpc_frame(result=result, _id=data.get('id'))
+
 
 class JsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
 
