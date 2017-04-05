@@ -63,6 +63,14 @@ class JsonRpcConsumer(WebsocketConsumer):
             Server error 	Reserved for implementation-defined server-errors. (@TODO)
 
     """
+    # Add http.request alogn with default websocket events
+    method_mapping = {
+        "websocket.connect": "raw_connect",
+        "websocket.receive": "raw_receive",
+        "websocket.disconnect": "raw_disconnect",
+        "http.request": "http_handler"
+    }
+
     PARSE_ERROR = -32700
     INVALID_REQUEST = -32600
     METHOD_NOT_FOUND = -32601
@@ -136,10 +144,10 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         return error
 
-    def http_consumer(self, message):
+    def http_handler(self, message):
         """
         Called on HTTP request
-        :param message:  
+        :param message: (string) message received
         :return: 
         """
         # Get Django HttpRequest object from ASGI Message
