@@ -1,16 +1,10 @@
 import json
-import sys
 import logging
 
 from channels.generic.websockets import WebsocketConsumer
 from django.http import HttpResponse
 from channels.handler import AsgiHandler, AsgiRequest
 from six import string_types
-
-if sys.version_info < (3, 5):
-    from inspect import getargspec
-else:
-    from inspect import getfullargspec
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -40,7 +34,7 @@ class JsonRpcException(Exception):
         return json.dumps(self.as_dict())
 
 
-class HttpMethodNotSupported(Exception):
+class MethodNotSupported(Exception):
     pass
 
 
@@ -100,18 +94,22 @@ class JsonRpcConsumer(WebsocketConsumer):
     available_rpc_methods = dict()
 
     @classmethod
-    def rpc_method(cls, rpc_name=None):
+    def rpc_method(cls, rpc_name=None, websocket=True, http=True):
         """
-        Decorator to list RPC methodds available. An optional name can be added
-        :param rpc_name:
+        Decorator to list RPC methodds available. An optional name and protocol rectrictions can be added
+        :param str rpc_name:
+        :param bool websocket:
+        :param bool http:
         :return: decorated function
         """
-
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
-            if id(cls) not in cls.available_rpc_methods:
-                cls.available_rpc_methods[id(cls)] = dict()
-            cls.available_rpc_methods[id(cls)][name] = f
+            cid = id(cls)
+            if cid not in cls.available_rpc_methods:
+                cls.available_rpc_methods[cid] = dict()
+            f.options = dict(websocket=websocket, http=http)
+            cls.available_rpc_methods[cid][name] = f
+
             return f
 
         return wrap
@@ -147,7 +145,7 @@ class JsonRpcConsumer(WebsocketConsumer):
     def http_handler(self, message):
         """
         Called on HTTP request
-        :param message: (string) message received
+        :param message: message received
         :return: 
         """
         # Get Django HttpRequest object from ASGI Message
@@ -156,9 +154,9 @@ class JsonRpcConsumer(WebsocketConsumer):
         # Try to process content
         try:
             if request.method != 'POST':
-                raise HttpMethodNotSupported('Only POST method is supported')
+                raise MethodNotSupported('Only POST method is supported')
             content = request.body.decode('utf-8')
-        except (UnicodeDecodeError, HttpMethodNotSupported):
+        except (UnicodeDecodeError, MethodNotSupported):
             content = ''
         result = self.__handle(content, message)
 
@@ -175,7 +173,7 @@ class JsonRpcConsumer(WebsocketConsumer):
     def raw_receive(self, message, **kwargs):
         """
         Called when receiving a message.
-        :param message: (string) message received
+        :param message: message received
         :param kwargs:
         :return:
         """
@@ -202,7 +200,7 @@ class JsonRpcConsumer(WebsocketConsumer):
             else:
                 if isinstance(data, dict):
 
-                    if data.get('method') is not None and data.get('params') is not None and not data.get('id'):
+                    if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
                         # TODO: implement notifications support
                         return
 
@@ -238,8 +236,9 @@ class JsonRpcConsumer(WebsocketConsumer):
     def __process(cls, data, original_msg):
         """
         Process the recived data
-        :param data: object
-        :return: object
+        :param dict data: 
+        :param channels.message.Message original_msg:
+        :return: dict
         """
 
         if data.get('jsonrpc') != "2.0":
@@ -257,29 +256,20 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         try:
             method = cls.available_rpc_methods[id(cls)][methodname]
-        except KeyError:
+            proto = original_msg.channel.name.split('.')[0]
+            if not method.options[proto]:
+                raise MethodNotSupported('Method not available through %s' % proto)
+        except (KeyError, MethodNotSupported):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
         params = data.get('params', [])
 
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
-        if sys.version_info < (3, 5):
-            func_args, _, _, _ = getargspec(method)
-        else:
-            func_args, _, _, _, _, _, _ = getfullargspec(method)
-
         if isinstance(params, list):
-            # we make sure that it has the right size
-            args = params
-            if 'original_message' in func_args:
-                args.insert(func_args.index('original_message'), original_msg)
-            result = method(*args)
+            result = method(*params, original_message=original_msg)
         else:
-            kwargs = params
-            if 'original_message' in func_args:
-                kwargs['original_message'] = original_msg
-            result = method(**kwargs)
+            result = method(original_message=original_msg, **params)
 
         return {
             'id': data.get('id'),
