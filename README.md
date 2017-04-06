@@ -104,7 +104,7 @@ def ping(fake_an_error):
         return "pong"
 ```
 
-## Sessions and other parameters from Message object
+## [Sessions and other parameters from Message object](#message-object)
 The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by having a parameter named *original_message*
 
 ```python
@@ -131,6 +131,53 @@ class MyJsonRpcConsumerTest(JsonRpcConsumer):
 
 
 ```
+
+## Notifications
+### Inbound notifications
+Those are the one sent from the client to the server.
+They are dealt with the same way RPC methods are, except that instead of using `rpc_method()`, you can use `rpc_notification()`
+Thos `rpc_notifications` can also retrieve the [`original_message`](#message-object) object
+```
+# Will be triggered when receiving this
+#  --> {"jsonrpc":"2.0","method":"notification.alt_name","params":["val_param1", "val_param2"]}
+@MyJsonRpcWebsocketConsumerTest.rpc_notification("notification.alt_name")
+def notification1(original_message, param1, param2):
+    # Do something with notification
+    # ...
+    # Notification shouldn't return anything.
+    return
+```
+
+### Outbound notifications
+The server might want to send notifications to one or more of its clients. For that `JsonRpcWebsocketConsumer` provides 2 static methods:
+ - **JsonRpcWebsocketConsumer.notify_group(*group_name*, *method*, *params*)**
+
+Using [channels'groups](https://channels.readthedocs.io/en/stable/concepts.html#groups) you can notify a whole group using this method
+```
+@MyJsonRpcWebsocketConsumerTest.rpc_method()
+def send_to_group(group_name):
+    MyJsonRpcWebsocketConsumerTest.notify_group(group_name, "notification.notif", {"payload": 1234})
+    return True
+```
+Calling the RPC-method will send this notification to all the group *group_name*
+
+
+ - **JsonRpcWebsocketConsumer.notify_channel(*reply_channel*, *method*, *params*)**
+
+This will notify only *one* channel/client.
+
+```
+@MyJsonRpcWebsocketConsumerTest.rpc_method()
+def send_to_reply_channel(original_message):
+    MyJsonRpcWebsocketConsumerTest.notify_channel(original_message.reply_channel,
+                                                "notification.ownnotif",
+                                                {"payload": 12})
+    return True
+
+```
+
+The `reply_channel` can be found in the[`original_message`](#message-object) object.
+
 
 ## Custom JSON encoder class
 
@@ -174,8 +221,7 @@ class TestsJsonConsumer(ChannelTestCase):
 
     def test_assert_result(self):
 
-         self.assertResult("ping", {},
-                           "pong")
+         self.assertResult("ping", {}, "pong")
 ```
 
 ## License
@@ -189,24 +235,3 @@ MIT
 
 [//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
 
-
-   [dill]: <https://github.com/joemccann/dillinger>
-   [git-repo-url]: <https://github.com/joemccann/dillinger.git>
-   [john gruber]: <http://daringfireball.net>
-   [@thomasfuchs]: <http://twitter.com/thomasfuchs>
-   [df1]: <http://daringfireball.net/projects/markdown/>
-   [markdown-it]: <https://github.com/markdown-it/markdown-it>
-   [Ace Editor]: <http://ace.ajax.org>
-   [node.js]: <http://nodejs.org>
-   [Twitter Bootstrap]: <http://twitter.github.com/bootstrap/>
-   [keymaster.js]: <https://github.com/madrobby/keymaster>
-   [jQuery]: <http://jquery.com>
-   [@tjholowaychuk]: <http://twitter.com/tjholowaychuk>
-   [express]: <http://expressjs.com>
-   [AngularJS]: <http://angularjs.org>
-   [Gulp]: <http://gulpjs.com>
-
-   [PlDb]: <https://github.com/joemccann/dillinger/tree/master/plugins/dropbox/README.md>
-   [PlGh]:  <https://github.com/joemccann/dillinger/tree/master/plugins/github/README.md>
-   [PlGd]: <https://github.com/joemccann/dillinger/tree/master/plugins/googledrive/README.md>
-   [PlOd]: <https://github.com/joemccann/dillinger/tree/master/plugins/onedrive/README.md>

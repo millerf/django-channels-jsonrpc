@@ -54,7 +54,7 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcConsumerTest):
 
 
 @MyJsonRpcWebsocketConsumerTest.rpc_method()
-def ping(fake_an_error):
+def ping(fake_an_error, **kwargs):
     if fake_an_error:
         # Will return an error to the client
         #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
