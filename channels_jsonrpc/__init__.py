@@ -1,1 +1,1 @@
-from .jsonrpcwebsocketconsumer import JsonRpcWebsocketConsumer, JsonRpcWebsocketConsumerTest, JsonRpcException
+from .jsonrpcconsumer import JsonRpcConsumer, JsonRpcConsumerTest, JsonRpcException
