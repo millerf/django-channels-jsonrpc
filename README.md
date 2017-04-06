@@ -7,6 +7,7 @@ The Django-channels-jsonrpc is aimed to enable [JSON-RPC](http://json-rpc.org/) 
 It is aimed to be:
   - Fully integrated with Channels
   - Fully implement JSON-RPC 1 and 2 protocol
+  - Support both WebSocket and HTTP transports
   - Easy integration
 
 ## Tech
@@ -29,7 +30,7 @@ $ pip install django-channels-jsonrpc
 ## Use
 
 
-See complete exmaple [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
+See complete example [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
 
 It is intended to be used as a Websocket consumer. See [documentation](http://channels.readthedocs.io/en/stable/generics.html#websockets) except... simplier...
 
@@ -42,7 +43,7 @@ class MyJsonRpcConsumer(JsonRpcConsumer):
 
     def connect(self, message, **kwargs):
         """
-        Perform things on connection start
+        Perform things on WebSocket connection start
         """
         self.message.reply_channel.send({"accept": True})
         
@@ -51,7 +52,7 @@ class MyJsonRpcConsumer(JsonRpcConsumer):
 
     def disconnect(self, message, **kwargs):
         """
-        Perform things on connection close
+        Perform things on WebSocket connection close
         """
         print("disconnect")
         # Do stuff if needed
