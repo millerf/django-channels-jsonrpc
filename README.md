@@ -234,8 +234,7 @@ class TestsJsonConsumer(ChannelTestCase):
 
     def test_assert_result(self):
 
-         self.assertResult("ping", {},
-                           "pong")
+         self.assertResult("ping", {}, "pong")
 ```
 
 ## License
