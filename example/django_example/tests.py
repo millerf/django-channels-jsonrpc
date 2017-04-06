@@ -138,8 +138,8 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping2", "params":["test"]}')
         msg = client.receive()
         self.assertIn(msg['error']['message'],
-                      [u'ping2() takes 0 positional arguments but 2 was given',  # python 2
-                       u'ping2() takes 0 positional arguments but 1 was given']) # python 3
+                      [u'ping2() takes exactly 0 arguments (2 given)',               # python 2
+                       u'ping2() takes 0 positional arguments but 1 was given'])     # python 3
 
     def test_parsing_with_good_request_ainvalid_paramas(self):
         @JsonRpcConsumerTest.rpc_method()
