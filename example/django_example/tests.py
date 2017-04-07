@@ -121,7 +121,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
     def test_method(self):
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping2(**kwargs):
+        def ping2():
             return "pong2"
 
         client = HttpClient()
@@ -133,7 +133,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_parsing_with_good_request_wrong_params(self):
         @JsonRpcConsumerTest.rpc_method()
-        def ping2(**kwargs):
+        def ping2():
             return "pong2"
 
         # Test that parsing a ping request works
@@ -143,7 +143,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping2", "params":["test"]}')
         msg = client.receive()
         self.assertIn(msg['error']['message'],
-                      [u'ping2() takes exactly 0 arguments (2 given)',               # python 2
+                      [u'ping2() takes no arguments (1 given)',               # python 2
                        u'ping2() takes 0 positional arguments but 1 was given'])     # python 3
 
     def test_parsing_with_good_request_ainvalid_paramas(self):
@@ -215,7 +215,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_error_on_rpc_call(self):
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_with_error(**kwargs):
+        def ping_with_error():
             raise Exception("pong_with_error")
 
         # Test that parsing a ping request works
@@ -228,7 +228,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_error_on_rpc_call_with_data(self):
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_with_error_data(**kwargs):
+        def ping_with_error_data():
             raise Exception("test_data", True)
 
         # Test that parsing a ping request works
@@ -300,12 +300,14 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
 
     def test_session_pass_param(self):
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_set_session(original_message):
+        def ping_set_session(**kwargs):
+            original_message = kwargs["original_message"]
             original_message.channel_session["test"] = True
             return "pong_set_session"
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_get_session(original_message):
+        def ping_get_session(**kwargs):
+            original_message = kwargs["original_message"]
             self.assertEqual(original_message.channel_session["test"], True)
             return "pong_get_session"
 
@@ -322,12 +324,14 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
     def test_Session(self):
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_set_session2(original_message):
+        def ping_set_session2(**kwargs):
+            original_message = kwargs["original_message"]
             original_message.channel_session["test"] = True
             return "pong_set_session2"
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping_get_session2(original_message):
+        def ping_get_session2(**kwargs):
+            original_message = kwargs["original_message"]
             self.assertNotIn("test", original_message.channel_session)
             return "pong_get_session2"
 
@@ -347,7 +351,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
         some_date = datetime.utcnow()
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def test_method(**kwargs):
+        def test_method():
             return {
                 'date': some_date
             }
@@ -361,7 +365,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
             pass
 
         @DjangoJsonRpcWebsocketConsumerTest.rpc_method()
-        def test_method1(**kwargs):
+        def test_method1():
             return {
                 'date': some_date
             }
@@ -385,11 +389,13 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                 self.payload = None
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping2(original_message):
+        def ping2(**kwargs):
+            original_message = kwargs["original_message"]
             return original_message.payload
 
         @MyJsonRpcWebsocketConsumerTest.rpc_method()
-        def ping3(original_message):
+        def ping3(**kwargs):
+            original_message = kwargs["original_message"]
             return original_message.payload
 
         def thread_test():
@@ -454,7 +460,7 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
     def test_websocket_param_in_decorator_for_notification(self):
 
         @MyJsonRpcWebsocketConsumerTest.rpc_notification(websocket=False)
-        def ping(**kwargs):
+        def ping():
             return "pong"
 
         client = HttpClient()
@@ -463,3 +469,141 @@ class TestsJsonRPCWebsocketConsumer(ChannelTestCase):
                                      '"params":[]}')
         msg = client.receive()
         self.assertEqual(msg, None)
+
+
+class TestsNotifications(ChannelTestCase):
+
+    def test_group_notifications(self):
+        from channels import Group
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def add_client_to_group(group_name, **kwargs):
+            original_message = kwargs["original_message"]
+            Group(group_name).add(original_message.reply_channel)
+            return True
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def send_to_group(group_name, **kwargs):
+            MyJsonRpcWebsocketConsumerTest.notify_group(group_name, "notification.notif", {"payload": 1234})
+            return True
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def send_to_reply_channel(**kwargs):
+            original_message = kwargs["original_message"]
+            MyJsonRpcWebsocketConsumerTest.notify_channel(original_message.reply_channel,
+                                                        "notification.ownnotif",
+                                                        {"payload": 12})
+            return True
+
+        def send_notif(_client):
+            _client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"send_to_group", "params":["group_test"]}')
+            # receive notif
+            msg = _client.receive()
+            self.assertEqual(msg['method'], "notification.notif")
+            self.assertEqual(msg['params'], {"payload": 1234})
+
+            # receive response
+            msg = _client.receive()
+            self.assertEqual(msg['result'], True)
+
+        client = HttpClient()
+        client2 = HttpClient()
+
+        # we test own reply channel
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"send_to_reply_channel", "params": []}')
+
+        msg = client.receive()
+        self.assertEquals(msg['method'], "notification.ownnotif")
+        self.assertEqual(msg['params'], {"payload": 12})
+
+        msg = client.receive()
+        self.assertEqual(msg['result'], True)
+
+        # we add client to a group_test group
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"add_client_to_group", "params":["group_test"]}')
+        msg = client.receive()
+        self.assertEqual(msg['result'], True)
+
+        msg = client.receive()
+        self.assertEqual(msg, None)
+
+        # we make sure it works
+        send_notif(client)
+
+        # we make sure the second client didn't receive anything
+        msg = client2.receive()
+        self.assertEqual(msg, None)
+
+        # we add the second client to another group
+        client2.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"add_client_to_group", "params":["group_test2"]}')
+        msg = client2.receive()
+        self.assertEqual(msg['result'], True)
+
+        # send again
+        send_notif(client)
+
+        # we make sure the second client didn't receive anything
+        msg = client2.receive()
+        self.assertEqual(msg, None)
+
+        # we add the second client to SAME group
+        client2.send_and_consume(u'websocket.receive',
+                                 text='{"id":1, "jsonrpc":"2.0", "method":"add_client_to_group", "params":["group_test"]}')
+        msg = client2.receive()
+        self.assertEqual(msg['result'], True)
+
+        send_notif(client)
+
+        # now second client should receive (as well)
+        msg = client2.receive()
+        self.assertEqual(msg['method'], "notification.notif")
+        self.assertEqual(msg['params'], {"payload": 1234})
+
+        # notif from second client
+        send_notif(client2)
+
+        # now second client should receive (as well)
+        msg = client.receive()
+        self.assertEqual(msg['method'], "notification.notif")
+        self.assertEqual(msg['params'], {"payload": 1234})
+
+    def test_inbound_notifications(self):
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_notification()
+        def notif1(params, **kwargs):
+            self.assertEqual(params, {"payload": True})
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_notification('notif.notif2')
+        def notif2(params, **kwargs):
+            self.assertEqual(params, {"payload": 12345})
+
+        client = HttpClient()
+
+        # we send a notification to the server
+        client.send_and_consume(u'websocket.receive',
+                                text='{"jsonrpc":"2.0", "method":"notif1", "params":[{"payload": true}]}')
+        msg = client.receive()
+        self.assertEqual(msg, None)
+
+        # we test with method rewriting
+        client.send_and_consume(u'websocket.receive',
+                            text='{"jsonrpc":"2.0", "method":"notif.notif2", "params":[{"payload": 12345}]}')
+        self.assertEqual(msg, None)
+
+    def test_kwargs_not_there(self):
+
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping():
+            return True
+
+        client = HttpClient()
+
+        # we send a notification to the server
+        client.send_and_consume(u'websocket.receive',
+                                text='{"id":1, "jsonrpc":"2.0", "method":"ping", "params":[]}')
+        msg = client.receive()
+        self.assertEqual(msg["result"], True)

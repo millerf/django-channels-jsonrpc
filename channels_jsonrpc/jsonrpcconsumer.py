@@ -2,6 +2,13 @@ import json
 import logging
 import sys
 
+if sys.version_info < (3, 5):
+    from inspect import getargspec as getfullargspec
+    keywords_args = "keywords"
+else:
+    from inspect import getfullargspec
+    keywords_args = "varkw"
+
 from channels.generic.websockets import WebsocketConsumer
 from django.http import HttpResponse
 from channels.handler import AsgiHandler, AsgiRequest
@@ -338,10 +345,7 @@ class JsonRpcConsumer(WebsocketConsumer):
             logger.warning("The params '%s' are not valid" % params)
             return
 
-        if isinstance(params, list):
-            result = method(*params, original_message=original_msg)
-        else:
-            result = method(original_message=original_msg, **params)
+        result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
         if result is not None:
             logger.warning("The notification method shouldn't return any result")
@@ -387,13 +391,27 @@ class JsonRpcConsumer(WebsocketConsumer):
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
-        if isinstance(params, list):
-            result = method(*params, original_message=original_msg)
-        else:
-            result = method(original_message=original_msg, **params)
+        result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
         return JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
 
+    @staticmethod
+    def __get_result(method, params, original_msg):
+
+        func_args = getattr(getfullargspec(method), keywords_args)
+
+        if func_args and "kwargs" in func_args:
+            if isinstance(params, list):
+                result = method(*params, original_message=original_msg)
+            else:
+                result = method(original_message=original_msg, **params)
+        else:
+            if isinstance(params, list):
+                result = method(*params)
+            else:
+                result = method(**params)
+
+        return result
 
 class JsonRpcConsumerTest(JsonRpcConsumer):
 
