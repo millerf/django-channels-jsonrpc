@@ -413,6 +413,7 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         return result
 
+
 class JsonRpcConsumerTest(JsonRpcConsumer):
 
     @classmethod
