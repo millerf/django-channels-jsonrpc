@@ -46,7 +46,7 @@ class MyJsonRpcConsumer(JsonRpcConsumer):
         Perform things on WebSocket connection start
         """
         self.message.reply_channel.send({"accept": True})
-        
+
         print("connect")
         # Do stuff if needed
 
@@ -105,11 +105,12 @@ def ping(fake_an_error):
 ```
 
 ## [Sessions and other parameters from Message object](#message-object)
-The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by having a parameter named *original_message*
+The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by retrieving the `**kwargs` and get a parameter named *original_message*
 
 ```python
 MyJsonRpcConsumerTest.rpc_method()
-def json_rpc_method(param1,original_message):
+def json_rpc_method(param1, **kwargs):
+    original_message = kwargs["orginal_message"]
     ##do something with original_message
 ```
 
@@ -125,7 +126,8 @@ class MyJsonRpcConsumerTest(JsonRpcConsumer):
 ....
 
 @MyJsonRpcConsumerTest.rpc_method()
-    def ping(original_message):
+    def ping(**kwargs):
+        original_message = kwargs["orginal_message"]
         original_message.channel_session["test"] = True
         return "pong"
 
@@ -141,7 +143,8 @@ Thos `rpc_notifications` can also retrieve the [`original_message`](#message-obj
 # Will be triggered when receiving this
 #  --> {"jsonrpc":"2.0","method":"notification.alt_name","params":["val_param1", "val_param2"]}
 @MyJsonRpcWebsocketConsumerTest.rpc_notification("notification.alt_name")
-def notification1(original_message, param1, param2):
+def notification1(param1, param2, **kwargs):
+    original_message = kwargs["orginal_message"]
     # Do something with notification
     # ...
     # Notification shouldn't return anything.
@@ -168,7 +171,8 @@ This will notify only *one* channel/client.
 
 ```
 @MyJsonRpcWebsocketConsumerTest.rpc_method()
-def send_to_reply_channel(original_message):
+def send_to_reply_channel(**kwargs):
+    original_message = kwarg["original_message"]
     MyJsonRpcWebsocketConsumerTest.notify_channel(original_message.reply_channel,
                                                 "notification.ownnotif",
                                                 {"payload": 12})
