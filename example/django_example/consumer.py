@@ -1,6 +1,6 @@
 from django.core.serializers.json import DjangoJSONEncoder
 
-from channels_jsonrpc import JsonRpcWebsocketConsumerTest
+from channels_jsonrpc import JsonRpcConsumerTest
 # import the logging library
 import logging
 
@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
+class MyJsonRpcWebsocketConsumerTest(JsonRpcConsumerTest):
 
     # Set to True if you want them, else leave out
     strict_ordering = False
@@ -54,7 +54,7 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
 
 
 @MyJsonRpcWebsocketConsumerTest.rpc_method()
-def ping(fake_an_error):
+def ping(fake_an_error, **kwargs):
     if fake_an_error:
         # Will return an error to the client
         #  --> {"id":1, "jsonrpc":"2.0","method":"mymodule.rpc.ping","params":{}}
@@ -67,5 +67,5 @@ def ping(fake_an_error):
         return "pong"
 
 
-class DjangoJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumerTest):
+class DjangoJsonRpcWebsocketConsumerTest(JsonRpcConsumerTest):
     json_encoder_class = DjangoJSONEncoder

@@ -7,6 +7,7 @@ The Django-channels-jsonrpc is aimed to enable [JSON-RPC](http://json-rpc.org/) 
 It is aimed to be:
   - Fully integrated with Channels
   - Fully implement JSON-RPC 1 and 2 protocol
+  - Support both WebSocket and HTTP transports
   - Easy integration
 
 ## Tech
@@ -29,69 +30,55 @@ $ pip install django-channels-jsonrpc
 ## Use
 
 
-See complete exmaple [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
+See complete example [here](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/), and in particular [consumer.py](https://github.com/millerf/django-channels-jsonrpc/blob/master/example/django_example/)
 
 It is intended to be used as a Websocket consumer. See [documentation](http://channels.readthedocs.io/en/stable/generics.html#websockets) except... simplier...
 
-Start importing the JsonRpcWebsocketConsumer class
+Import JsonRpcConsumer class and create the consumer
 
 ```python
-from channels_jsonrpc import JsonRpcWebsocketConsumer
-```
+from channels_jsonrpc import JsonRpcConsumer
 
-And create the consumer
-
-```python
-class MyJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
-
-    # Set to True if you want them, else leave out
-    strict_ordering = False
-    slight_ordering = False
-
-    def connection_groups(self, **kwargs):
-        """
-        Called to return the list of groups to automatically add/remove
-        this connection to/from.
-        """
-        return ["test"]
+class MyJsonRpcConsumer(JsonRpcConsumer):
 
     def connect(self, message, **kwargs):
         """
-        Perform things on connection start
+        Perform things on WebSocket connection start
         """
         self.message.reply_channel.send({"accept": True})
-        print("connect")
 
+        print("connect")
         # Do stuff if needed
 
     def disconnect(self, message, **kwargs):
         """
-        Perform things on connection close
+        Perform things on WebSocket connection close
         """
         print("disconnect")
-
         # Do stuff if needed
 
 ```
+JsonRpcConsumer derives from Channels WebSocketConsumer, you can read about all it's features here:
+https://channels.readthedocs.io/en/stable/generics.html#websockets
 
 Then the last step is to create the RPC methos hooks. IT is done with the decorator:
 ```python
-@MyJsonRpcWebsocketConsumer.rpc_method()
+@MyJsonRpcConsumer.rpc_method()
 ````
 
 
 Like this:
 
 ```python
-@MyJsonRpcWebsocketConsumer.rpc_method()
+@MyJsonRpcConsumer.rpc_method()
 def ping():
     return "pong"
 ```
 
 
-**MyJsonRpcWebsocketConsumer.rpc_method()** accept a *string* as a parameter to 'rename' the function
+**MyJsonRpcConsumer.rpc_method()** accept a *string* as a parameter to 'rename' the function
 ```python
-@MyJsonRpcWebsocketConsumer.rpc_method("mymodule.rpc.ping")
+@MyJsonRpcConsumer.rpc_method("mymodule.rpc.ping")
 def ping():
     return "pong"
 ```
@@ -103,7 +90,7 @@ Will now be callable with "method":"mymodule.rpc.ping" in the rpc call:
 
 RPC methods can obviously accept parameters. They also return "results" or "errors":
 ```python
-@MyJsonRpcWebsocketConsumer.rpc_method("mymodule.rpc.ping")
+@MyJsonRpcConsumer.rpc_method("mymodule.rpc.ping")
 def ping(fake_an_error):
     if fake_an_error:
         # Will return an error to the client
@@ -118,18 +105,19 @@ def ping(fake_an_error):
 ```
 
 ## [Sessions and other parameters from Message object](#message-object)
-The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by having a parameter named *original_message*
+The original channel message - that can contain sessions (if activated with [http_user](https://channels.readthedocs.io/en/stable/generics.html#websockets)) and other important info  can be easily accessed by retrieving the `**kwargs` and get a parameter named *original_message*
 
 ```python
-MyJsonRpcWebsocketConsumerTest.rpc_method()
-def json_rpc_method(param1,original_message):
+MyJsonRpcConsumerTest.rpc_method()
+def json_rpc_method(param1, **kwargs):
+    original_message = kwargs["orginal_message"]
     ##do something with original_message
 ```
 
 Example:
 
 ```python
-class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
+class MyJsonRpcConsumerTest(JsonRpcConsumer):
     # Set to True to automatically port users from HTTP cookies
     # (you don't need channel_session_user, this implies it)
     # https://channels.readthedocs.io/en/stable/generics.html#websockets
@@ -137,8 +125,9 @@ class MyJsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
 
 ....
 
-@MyJsonRpcWebsocketConsumerTest.rpc_method()
-    def ping(original_message):
+@MyJsonRpcConsumerTest.rpc_method()
+    def ping(**kwargs):
+        original_message = kwargs["orginal_message"]
         original_message.channel_session["test"] = True
         return "pong"
 
@@ -154,7 +143,8 @@ Thos `rpc_notifications` can also retrieve the [`original_message`](#message-obj
 # Will be triggered when receiving this
 #  --> {"jsonrpc":"2.0","method":"notification.alt_name","params":["val_param1", "val_param2"]}
 @MyJsonRpcWebsocketConsumerTest.rpc_notification("notification.alt_name")
-def notification1(original_message, param1, param2):
+def notification1(param1, param2, **kwargs):
+    original_message = kwargs["orginal_message"]
     # Do something with notification
     # ...
     # Notification shouldn't return anything.
@@ -181,7 +171,8 @@ This will notify only *one* channel/client.
 
 ```
 @MyJsonRpcWebsocketConsumerTest.rpc_method()
-def send_to_reply_channel(original_message):
+def send_to_reply_channel(**kwargs):
+    original_message = kwarg["original_message"]
     MyJsonRpcWebsocketConsumerTest.notify_channel(original_message.reply_channel,
                                                 "notification.ownnotif",
                                                 {"payload": 12})
@@ -198,23 +189,23 @@ The `reply_channel` can be found in the[`original_message`](#message-object) obj
 from django.core.serializers.json import DjangoJSONEncoder
 
 
-class DjangoJsonRpcWebsocketConsumer(JsonRpcWebsocketConsumer):
+class DjangoJsonRpcConsumer(JsonRpcConsumer):
     json_encoder_class = DjangoJSONEncoder
 ```
 
 ## Testing
 
 
-The JsonRpcWebsocketConsumer class can be tested the same way Channels Consumers are tested.
+The JsonRpcConsumer class can be tested the same way Channels Consumers are tested.
 See [here](http://channels.readthedocs.io/en/stable/testing.html)
 
 You just need to remember to set your JsonRpcConsumer class to TEST_MODE in the test:
 
 ```python
 from channels.tests import ChannelTestCase, HttpClient
-from .consumer import MyJsonRpcWebsocketConsumer
+from .consumer import MyJsonRpcConsumer
 
-MyJsonRpcWebsocketConsumer.TEST_MODE = True
+MyJsonRpcConsumer.TEST_MODE = True
 
 
 
