@@ -99,9 +99,9 @@ class JsonRpcConsumer(WebsocketConsumer):
     def rpc_method(cls, rpc_name=None, websocket=True, http=True):
         """
         Decorator to list RPC methodds available. An optional name and protocol rectrictions can be added
-        :param str rpc_name:
-        :param bool websocket:
-        :param bool http:
+        :param rpc_name: RPC name for the function
+        :param bool websocket: if websocket transport can use this function
+        :param bool http:if http transport can use this function
         :return: decorated function
         """
         def wrap(f):
@@ -127,18 +127,22 @@ class JsonRpcConsumer(WebsocketConsumer):
         return list(cls.available_rpc_methods[id(cls)].keys())
 
     @classmethod
-    def rpc_notification(cls, rpc_name=None):
+    def rpc_notification(cls, rpc_name=None, websocket=True, http=True):
         """
         Decorator to list RPC notifications available. An optional name can be added
-        :param rpc_name:
+        :param rpc_name: RPC name for the function
+        :param bool websocket: if websocket transport can use this function
+        :param bool http:if http transport can use this function
         :return: decorated function
         """
 
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
-            if id(cls) not in cls.available_rpc_notifications:
-                cls.available_rpc_notifications[id(cls)] = dict()
-            cls.available_rpc_notifications[id(cls)][name] = f
+            cid = id(cls)
+            if cid not in cls.available_rpc_notifications:
+                cls.available_rpc_notifications[cid] = dict()
+            f.options = dict(websocket=websocket, http=http)
+            cls.available_rpc_notifications[cid][name] = f
             return f
 
         return wrap
@@ -323,9 +327,10 @@ class JsonRpcConsumer(WebsocketConsumer):
             method = cls.available_rpc_notifications[id(cls)][method_name]
             proto = original_msg.channel.name.split('.')[0]
             if not method.options[proto]:
-                raise MethodNotSupported('Method not available through %s' % proto)
+                logger.warning("The method '%s' of the notification cannot be found" % method_name)
         except KeyError:
-            logger.warning("The method '%s' of the notification cannot be found" % method_name)
+            # We don't send back anything (notification)
+            pass
             return
         params = data.get('params', [])
 
@@ -339,7 +344,7 @@ class JsonRpcConsumer(WebsocketConsumer):
             result = method(original_message=original_msg, **params)
 
         if result is not None:
-            logger.warning("The notification method shouldn't return any result" % (method_name, params))
+            logger.warning("The notification method shouldn't return any result")
             logger.warning("method: %s, params: %s" % (method_name, params))
 
         # no result
