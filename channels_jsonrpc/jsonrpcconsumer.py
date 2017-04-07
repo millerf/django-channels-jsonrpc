@@ -1,16 +1,18 @@
-from channels.generic.websockets import WebsocketConsumer
 import json
-from threading import Thread
-from six import string_types
-import sys
-# import the logging library
 import logging
+import sys
 
 if sys.version_info < (3, 5):
-    from inspect import getargspec
+    from inspect import getargspec as getfullargspec
+    keywords_args = "keywords"
 else:
     from inspect import getfullargspec
+    keywords_args = "varkw"
 
+from channels.generic.websockets import WebsocketConsumer
+from django.http import HttpResponse
+from channels.handler import AsgiHandler, AsgiRequest
+from six import string_types
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class JsonRpcException(Exception):
     """
-    >>> exc = JsonRpcException(1, JsonRpcWebsocketConsumer.INVALID_REQUEST)
+    >>> exc = JsonRpcException(1, JsonRpcConsumer.INVALID_REQUEST)
     >>> str(exc)
     '{"jsonrpc": "2.0", "id": 1, "error": {"message": "Invalid Request", "code": -32600}}'
 
@@ -31,20 +33,20 @@ class JsonRpcException(Exception):
 
     @property
     def message(self):
-        return JsonRpcWebsocketConsumer.errors[self.code]
+        return JsonRpcConsumer.errors[self.code]
 
     def as_dict(self):
-        return JsonRpcWebsocketConsumer.error(self.rpc_id, self.code, self.message, self.data)
+        return JsonRpcConsumer.error(self.rpc_id, self.code, self.message, self.data)
 
     def __str__(self):
         return json.dumps(self.as_dict())
 
 
-class JsonRpcWebsocketConsumer(WebsocketConsumer):
+class MethodNotSupported(Exception):
+    pass
 
-    # TEST_MODE: enable the multithreading. Put to TRUE while testing
-    TEST_MODE = False
 
+class JsonRpcConsumer(WebsocketConsumer):
     """
     Variant of WebsocketConsumer that automatically JSON-encodes and decodes
     messages as they come in and go out. Expects everything to be text; will
@@ -63,6 +65,14 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             Server error 	Reserved for implementation-defined server-errors. (@TODO)
 
     """
+    # Add http.request alogn with default websocket events
+    method_mapping = {
+        "websocket.connect": "raw_connect",
+        "websocket.receive": "raw_receive",
+        "websocket.disconnect": "raw_disconnect",
+        "http.request": "http_handler"
+    }
+
     PARSE_ERROR = -32700
     INVALID_REQUEST = -32600
     METHOD_NOT_FOUND = -32601
@@ -78,24 +88,39 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
     errors[INTERNAL_ERROR] = "Internal Error"
     errors[GENERIC_APPLICATION_ERROR] = "Application Error"
 
+    _http_codes = {
+        PARSE_ERROR: 500,
+        INVALID_REQUEST: 400,
+        METHOD_NOT_FOUND: 404,
+        INVALID_PARAMS: 500,
+        INTERNAL_ERROR: 500,
+        GENERIC_APPLICATION_ERROR: 500
+    }
+
     json_encoder_class = None
 
     available_rpc_methods = dict()
     available_rpc_notifications = dict()
 
     @classmethod
-    def rpc_method(cls, rpc_name=None):
+    def rpc_method(cls, rpc_name=None, websocket=True, http=True):
         """
-        Decorator to list RPC methodds available. An optionnal name can be added
-        :param rpc_name:
+        Decorator to list RPC methodds available. An optional name and protocol rectrictions can be added
+        :param rpc_name: RPC name for the function
+        :param bool websocket: if websocket transport can use this function
+        :param bool http:if http transport can use this function
         :return: decorated function
         """
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
-            if id(cls) not in cls.available_rpc_methods:
-                cls.available_rpc_methods[id(cls)] = dict()
-            cls.available_rpc_methods[id(cls)][name] = f
+            cid = id(cls)
+            if cid not in cls.available_rpc_methods:
+                cls.available_rpc_methods[cid] = dict()
+            f.options = dict(websocket=websocket, http=http)
+            cls.available_rpc_methods[cid][name] = f
+
             return f
+
         return wrap
 
     @classmethod
@@ -109,18 +134,22 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         return list(cls.available_rpc_methods[id(cls)].keys())
 
     @classmethod
-    def rpc_notification(cls, rpc_name=None):
+    def rpc_notification(cls, rpc_name=None, websocket=True, http=True):
         """
         Decorator to list RPC notifications available. An optional name can be added
-        :param rpc_name:
+        :param rpc_name: RPC name for the function
+        :param bool websocket: if websocket transport can use this function
+        :param bool http:if http transport can use this function
         :return: decorated function
         """
 
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
-            if id(cls) not in cls.available_rpc_notifications:
-                cls.available_rpc_notifications[id(cls)] = dict()
-            cls.available_rpc_notifications[id(cls)][name] = f
+            cid = id(cls)
+            if cid not in cls.available_rpc_notifications:
+                cls.available_rpc_notifications[cid] = dict()
+            f.options = dict(websocket=websocket, http=http)
+            cls.available_rpc_notifications[cid][name] = f
             return f
 
         return wrap
@@ -152,7 +181,6 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
     @staticmethod
     def error(_id, code, message, data=None):
-
         """
         Error-type answer generator
         :param _id: int
@@ -165,67 +193,97 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         if data is not None:
             error["data"] = data
 
-        return JsonRpcWebsocketConsumer.json_rpc_frame(error=error, _id=_id)
+        return JsonRpcConsumer.json_rpc_frame(error=error, _id=_id)
+
+    def http_handler(self, message):
+        """
+        Called on HTTP request
+        :param message: message received
+        :return:
+        """
+        # Get Django HttpRequest object from ASGI Message
+        request = AsgiRequest(message)
+
+        # Try to process content
+        try:
+            if request.method != 'POST':
+                raise MethodNotSupported('Only POST method is supported')
+            content = request.body.decode('utf-8')
+        except (UnicodeDecodeError, MethodNotSupported):
+            content = ''
+        result = self.__handle(content, message)
+
+        # Set response status code
+        status_code = 200
+        if 'error' in result:
+            status_code = self._http_codes[result['error']['code']]
+
+        # Encode that response into message format (ASGI)
+        response = HttpResponse(self._encode(result), content_type='application/json-rpc', status=status_code)
+        for chunk in AsgiHandler.encode_response(response):
+            message.reply_channel.send(chunk)
 
     def raw_receive(self, message, **kwargs):
         """
         Called when receiving a message.
-        :param message: (string) message received
+        :param message: message received
         :param kwargs:
         :return:
         """
+        content = '' if "text" not in message else message["text"]
+        result = self.__handle(content, message)
 
-        def __thread(message_content, message):
-            result = ''
-            if message_content is not None:
-                try:
-                    data = json.loads(message_content)
-                    if isinstance(data, dict):
+        # Send responce back
+        self.send(text=self._encode(result))
 
-                        if data.get('method') is not None and data.get('params') is not None and not data.get('id'):
-                            # notification, we don't support it just yet
-                            try:
-                                self.__process_notification(data, message)
-                            except Exception:
-                                pass
-                            return
-                        try:
-                            result = self.__process(data, message)
-                        except JsonRpcException as e:
-                            result = e.as_dict()
-                        except Exception as e:
-                            logger.exception('Application error')
-                            result = self.error(data.get('id'),
-                                                self.GENERIC_APPLICATION_ERROR,
-                                                str(e),
-                                                e.args[0] if len(e.args) == 1 else e.args)
-
-                    elif isinstance(data, list):
-                        if len([x for x in data if not isinstance(x, dict)]):
-                            result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
-                except ValueError as e:
-                    # json could not decoded
-                    result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
-                except Exception as e:
-                    result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
-
+    def __handle(self, content, message):
+        """
+        Handle
+        :param content:
+        :param message:
+        :return:
+        """
+        result = ''
+        if content != '':
+            try:
+                data = json.loads(content)
+            except ValueError:
+                # json could not decoded
+                result = self.error(None, self.PARSE_ERROR, self.errors[self.PARSE_ERROR])
             else:
-                result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
+                if isinstance(data, dict):
 
-            self.send(result)
+                    if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
+                        self.__process_notification(data, message)
+                        return
 
-        content = None if "text" not in message else message["text"]
-        if not self.TEST_MODE:
-            t = Thread(target=__thread, args=(content, message))
-            t.start()
+                    try:
+                        result = self.__process(data, message)
+                    except JsonRpcException as e:
+                        result = e.as_dict()
+                    except Exception as e:
+                        logger.exception('Application error')
+                        result = self.error(data.get('id'),
+                                            self.GENERIC_APPLICATION_ERROR,
+                                            str(e),
+                                            e.args[0] if len(e.args) == 1 else e.args)
+                elif isinstance(data, list):
+                    # TODO: implement batch calls
+                    if len([x for x in data if not isinstance(x, dict)]):
+                        result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
+
         else:
-            __thread(content, message)
+            result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
-    def send(self, content, close=False):
+        return result
+
+    def _encode(self, data):
         """
-        Encode the given content as JSON and send it to the client.
+        Encode data object to JSON string
+        :param data:
+        :return:
         """
-        super(JsonRpcWebsocketConsumer, self).send(text=json.dumps(content, cls=self.json_encoder_class), close=close)
+        return json.dumps(data, cls=self.json_encoder_class)
 
     @classmethod
     def notify_group(cls, group_name, method, params=None):
@@ -236,7 +294,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         :param params: parmas of the method
         :return:
         """
-        content = JsonRpcWebsocketConsumer.json_rpc_frame(method=method, params=params)
+        content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
         WebsocketConsumer.group_send(group_name, json.dumps(content, cls=cls.json_encoder_class))
 
     @classmethod
@@ -248,7 +306,7 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
                 :param params: parmas of the method
                 :return:
                 """
-        content = JsonRpcWebsocketConsumer.json_rpc_frame(method=method, params=params)
+        content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
         reply_channel.send(content)
 
     @classmethod
@@ -274,8 +332,12 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
         try:
             method = cls.available_rpc_notifications[id(cls)][method_name]
+            proto = original_msg.channel.name.split('.')[0]
+            if not method.options[proto]:
+                logger.warning("The method '%s' of the notification cannot be found" % method_name)
         except KeyError:
-            logger.warning("The method '%s' of the notification cannot be found" % method_name)
+            # We don't send back anything (notification)
+            pass
             return
         params = data.get('params', [])
 
@@ -283,25 +345,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
             logger.warning("The params '%s' are not valid" % params)
             return
 
-        if sys.version_info < (3, 5):
-            func_args, _, _, _ = getargspec(method)
-        else:
-            func_args, _, _, _, _, _, _ = getfullargspec(method)
-
-        if isinstance(params, list):
-            # we make sure that it has the right size
-            args = params
-            if 'original_message' in func_args:
-                args.insert(func_args.index('original_message'), original_msg)
-            result = method(*args)
-        elif isinstance(params, dict):
-            kwargs = params
-            if 'original_message' in func_args:
-                kwargs['original_message'] = original_msg
-            result = method(**kwargs)
+        result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
         if result is not None:
-            logger.warning("The notification method shouldn't return any result" % (method_name, params))
+            logger.warning("The notification method shouldn't return any result")
             logger.warning("method: %s, params: %s" % (method_name, params))
 
         # no result
@@ -313,6 +360,10 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
         Process the received data
         :param data: object
         :return: object
+        Process the recived data
+        :param dict data:
+        :param channels.message.Message original_msg:
+        :return: dict
         """
 
         if data.get('jsonrpc') != "2.0":
@@ -330,36 +381,39 @@ class JsonRpcWebsocketConsumer(WebsocketConsumer):
 
         try:
             method = cls.available_rpc_methods[id(cls)][method_name]
-        except KeyError:
+            proto = original_msg.channel.name.split('.')[0]
+            if not method.options[proto]:
+                raise MethodNotSupported('Method not available through %s' % proto)
+        except (KeyError, MethodNotSupported):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
         params = data.get('params', [])
 
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
-        if sys.version_info < (3, 5):
-            func_args, _, _, _ = getargspec(method)
+        result = JsonRpcConsumer.__get_result(method, params, original_msg)
+
+        return JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
+
+    @staticmethod
+    def __get_result(method, params, original_msg):
+
+        func_args = getattr(getfullargspec(method), keywords_args)
+
+        if func_args and "kwargs" in func_args:
+            if isinstance(params, list):
+                result = method(*params, original_message=original_msg)
+            else:
+                result = method(original_message=original_msg, **params)
         else:
-            func_args, _, _, _, _, _, _ = getfullargspec(method)
+            if isinstance(params, list):
+                result = method(*params)
+            else:
+                result = method(**params)
 
-        if isinstance(params, list):
-            # we make sure that it has the right size
-            args = params
-            if 'original_message' in func_args:
-                args.insert(func_args.index('original_message'), original_msg)
-            result = method(*args)
-        elif isinstance(params, dict):
-            kwargs = params
-            if 'original_message' in func_args:
-                kwargs['original_message'] = original_msg
-            result = method(**kwargs)
+        return result
 
-        return JsonRpcWebsocketConsumer.json_rpc_frame(result=result, _id=data.get('id'))
-
-
-class JsonRpcWebsocketConsumerTest(JsonRpcWebsocketConsumer):
-
-    TEST_MODE = True
+class JsonRpcConsumerTest(JsonRpcConsumer):
 
     @classmethod
     def clean(cls):
