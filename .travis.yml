@@ -30,6 +30,9 @@ deploy:
         tags: true
         distributions: sdist bdist_wheel
         repo: millerf/django-channels-jsonrpc
+addons:
+    code_climate:
+        repo_token: 485981332850be046c9a8c0beda9a864ae65e7649d2f8dc2ef447e39064df2a2
 
  #   - provider: releases
  #     api_key:
