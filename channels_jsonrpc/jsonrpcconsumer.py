@@ -214,11 +214,11 @@ class JsonRpcConsumer(WebsocketConsumer):
             content = request.body.decode('utf-8')
         except (UnicodeDecodeError, MethodNotSupported):
             content = ''
-        result, result_type = self.__handle(content, message)
+        result, is_notification = self.__handle(content, message)
 
         # Set response status code
         # http://www.jsonrpc.org/historical/json-rpc-over-http.html#response-codes
-        if result_type == 0:
+        if not is_notification:
             # call response
             status_code = 200
             if 'error' in result:
@@ -243,10 +243,10 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         content = '' if "text" not in message else message["text"]
-        result, result_type = self.__handle(content, message)
+        result, is_notification = self.__handle(content, message)
 
         # Send responce back only if it is a call, not notification
-        if result_type == 0:
+        if not is_notification:
             self.send(text=self._encode(result))
 
     def __handle(self, content, message):
@@ -257,7 +257,7 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         result = None
-        req_type = 0
+        is_notification = False
         if content != '':
             try:
                 data = json.loads(content)
@@ -269,7 +269,7 @@ class JsonRpcConsumer(WebsocketConsumer):
 
                     try:
                         if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
-                            req_type = 1
+                            is_notification = True
                             self.__process_notification(data, message)
                         else:
                             result = self.__process(data, message)
@@ -289,7 +289,7 @@ class JsonRpcConsumer(WebsocketConsumer):
         else:
             result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
-        return result, req_type
+        return result, is_notification
 
     def _encode(self, data):
         """
