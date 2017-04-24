@@ -4,9 +4,11 @@ import sys
 
 if sys.version_info < (3, 5):
     from inspect import getargspec as getfullargspec
+
     keywords_args = "keywords"
 else:
     from inspect import getfullargspec
+
     keywords_args = "varkw"
 
 from channels.generic.websockets import WebsocketConsumer
@@ -111,6 +113,7 @@ class JsonRpcConsumer(WebsocketConsumer):
         :param bool http:if http transport can use this function
         :return: decorated function
         """
+
         def wrap(f):
             name = rpc_name if rpc_name is not None else f.__name__
             cid = id(cls)
@@ -211,15 +214,24 @@ class JsonRpcConsumer(WebsocketConsumer):
             content = request.body.decode('utf-8')
         except (UnicodeDecodeError, MethodNotSupported):
             content = ''
-        result = self.__handle(content, message)
+        result, is_notification = self.__handle(content, message)
 
         # Set response status code
-        status_code = 200
-        if 'error' in result:
-            status_code = self._http_codes[result['error']['code']]
+        # http://www.jsonrpc.org/historical/json-rpc-over-http.html#response-codes
+        if not is_notification:
+            # call response
+            status_code = 200
+            if 'error' in result:
+                status_code = self._http_codes[result['error']['code']]
+        else:
+            # notification response
+            status_code = 204
+            if result and 'error' in result:
+                status_code = self._http_codes[result['error']['code']]
+            result = ''
 
         # Encode that response into message format (ASGI)
-        response = HttpResponse(self._encode(result), content_type='application/json-rpc', status=status_code)
+        response = HttpResponse(self.__class__._encode(result), content_type='application/json-rpc', status=status_code)
         for chunk in AsgiHandler.encode_response(response):
             message.reply_channel.send(chunk)
 
@@ -231,10 +243,11 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         content = '' if "text" not in message else message["text"]
-        result = self.__handle(content, message)
+        result, is_notification = self.__handle(content, message)
 
-        # Send responce back
-        self.send(text=self._encode(result))
+        # Send responce back only if it is a call, not notification
+        if not is_notification:
+            self.send(text=self.__class__._encode(result))
 
     def __handle(self, content, message):
         """
@@ -243,7 +256,8 @@ class JsonRpcConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        result = ''
+        result = None
+        is_notification = False
         if content != '':
             try:
                 data = json.loads(content)
@@ -253,12 +267,12 @@ class JsonRpcConsumer(WebsocketConsumer):
             else:
                 if isinstance(data, dict):
 
-                    if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
-                        self.__process_notification(data, message)
-                        return
-
                     try:
-                        result = self.__process(data, message)
+                        if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
+                            is_notification = True
+                            self.__process_notification(data, message)
+                        else:
+                            result = self.__process(data, message)
                     except JsonRpcException as e:
                         result = e.as_dict()
                     except Exception as e:
@@ -275,15 +289,16 @@ class JsonRpcConsumer(WebsocketConsumer):
         else:
             result = self.error(None, self.INVALID_REQUEST, self.errors[self.INVALID_REQUEST])
 
-        return result
+        return result, is_notification
 
-    def _encode(self, data):
+    @classmethod
+    def _encode(cls, data):
         """
         Encode data object to JSON string
         :param data:
         :return:
         """
-        return json.dumps(data, cls=self.json_encoder_class)
+        return json.dumps(data, cls=cls.json_encoder_class)
 
     @classmethod
     def notify_group(cls, group_name, method, params=None):
@@ -295,19 +310,19 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
-        WebsocketConsumer.group_send(group_name, json.dumps(content, cls=cls.json_encoder_class))
+        cls.group_send(group_name, cls._encode(content))
 
     @classmethod
     def notify_channel(cls, reply_channel, method, params):
         """
-                Notify a group. Using JSON-RPC notificatons
-                :param reply_channel: Reply channel
-                :param method: JSON-RPC method
-                :param params: parmas of the method
-                :return:
-                """
+        Notify a group. Using JSON-RPC notificatons
+        :param reply_channel: Reply channel
+        :param method: JSON-RPC method
+        :param params: parmas of the method
+        :return:
+        """
         content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
-        reply_channel.send(content)
+        reply_channel.send({"text": cls._encode(content)})
 
     @classmethod
     def __process_notification(cls, data, original_msg):
@@ -415,7 +430,6 @@ class JsonRpcConsumer(WebsocketConsumer):
 
 
 class JsonRpcConsumerTest(JsonRpcConsumer):
-
     @classmethod
     def clean(cls):
         """
