@@ -231,7 +231,7 @@ class JsonRpcConsumer(WebsocketConsumer):
             result = ''
 
         # Encode that response into message format (ASGI)
-        response = HttpResponse(self._encode(result), content_type='application/json-rpc', status=status_code)
+        response = HttpResponse(self.__class__._encode(result), content_type='application/json-rpc', status=status_code)
         for chunk in AsgiHandler.encode_response(response):
             message.reply_channel.send(chunk)
 
@@ -247,7 +247,7 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         # Send responce back only if it is a call, not notification
         if not is_notification:
-            self.send(text=self._encode(result))
+            self.send(text=self.__class__._encode(result))
 
     def __handle(self, content, message):
         """
@@ -291,13 +291,14 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         return result, is_notification
 
-    def _encode(self, data):
+    @classmethod
+    def _encode(cls, data):
         """
         Encode data object to JSON string
         :param data:
         :return:
         """
-        return json.dumps(data, cls=self.json_encoder_class)
+        return json.dumps(data, cls=cls.json_encoder_class)
 
     @classmethod
     def notify_group(cls, group_name, method, params=None):
@@ -309,7 +310,7 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
-        WebsocketConsumer.group_send(group_name, json.dumps(content, cls=cls.json_encoder_class))
+        cls.group_send(group_name, cls._encode(content))
 
     @classmethod
     def notify_channel(cls, reply_channel, method, params):
@@ -321,7 +322,7 @@ class JsonRpcConsumer(WebsocketConsumer):
         :return:
         """
         content = JsonRpcConsumer.json_rpc_frame(method=method, params=params)
-        reply_channel.send({"text": json.dumps(content, cls=cls.json_encoder_class)})
+        reply_channel.send({"text": cls._encode(content)})
 
     @classmethod
     def __process_notification(cls, data, original_msg):
