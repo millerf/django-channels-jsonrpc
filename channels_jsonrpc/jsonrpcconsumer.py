@@ -270,9 +270,7 @@ class JsonRpcConsumer(WebsocketConsumer):
                     try:
                         if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
                             is_notification = True
-                            self.__process_notification(data, message)
-                        else:
-                            result = self.__process(data, message)
+                        result = self.__process(data, message, is_notification)
                     except JsonRpcException as e:
                         result = e.as_dict()
                     except Exception as e:
@@ -325,59 +323,12 @@ class JsonRpcConsumer(WebsocketConsumer):
         reply_channel.send({"text": cls._encode(content)})
 
     @classmethod
-    def __process_notification(cls, data, original_msg):
+    def __process(cls, data, original_msg, is_notification=False):
         """
-                Process an inbound JSON-RPC notificaton
-                :param data: object
-                :return: object
-                """
-
-        if 'method' not in data:
-            logger.warning("The notification doesn't have a 'method'")
-            return
-
-        method_name = data['method']
-        if not isinstance(method_name, string_types):
-            logger.warning("The notification doesn't have a valid 'method'")
-            return
-
-        if method_name.startswith('_'):
-            logger.warning("The method '%s' of the notification cannot be found" % method_name)
-            return
-
-        try:
-            method = cls.available_rpc_notifications[id(cls)][method_name]
-            proto = original_msg.channel.name.split('.')[0]
-            if not method.options[proto]:
-                logger.warning("The method '%s' of the notification cannot be found" % method_name)
-        except KeyError:
-            # We don't send back anything (notification)
-            pass
-            return
-        params = data.get('params', [])
-
-        if not isinstance(params, (list, dict)):
-            logger.warning("The params '%s' are not valid" % params)
-            return
-
-        result = JsonRpcConsumer.__get_result(method, params, original_msg)
-
-        if result is not None:
-            logger.warning("The notification method shouldn't return any result")
-            logger.warning("method: %s, params: %s" % (method_name, params))
-
-        # no result
-        return
-
-    @classmethod
-    def __process(cls, data, original_msg):
-        """
-        Process the received data
-        :param data: object
-        :return: object
         Process the recived data
         :param dict data:
         :param channels.message.Message original_msg:
+        :param bool is_notification:
         :return: dict
         """
 
@@ -395,7 +346,10 @@ class JsonRpcConsumer(WebsocketConsumer):
             raise JsonRpcException(data.get('id'), cls.METHOD_NOT_FOUND)
 
         try:
-            method = cls.available_rpc_methods[id(cls)][method_name]
+            if is_notification:
+                method = cls.available_rpc_notifications[id(cls)][method_name]
+            else:
+                method = cls.available_rpc_methods[id(cls)][method_name]
             proto = original_msg.channel.name.split('.')[0]
             if not method.options[proto]:
                 raise MethodNotSupported('Method not available through %s' % proto)
@@ -408,7 +362,15 @@ class JsonRpcConsumer(WebsocketConsumer):
 
         result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
-        return JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
+        # check and pack result
+        if not is_notification:
+            result = JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
+        elif result is not None:
+            logger.warning("The notification method shouldn't return any result")
+            logger.warning("method: %s, params: %s" % (method_name, params))
+            result = None
+
+        return result
 
     @staticmethod
     def __get_result(method, params, original_msg):
