@@ -181,6 +181,20 @@ def send_to_reply_channel(**kwargs):
 
 The `reply_channel` can be found in the[`original_message`](#message-object) object.
 
+### Transport-specific rpc-method/notifications
+If you want to restrict rpc methods or notifications access to a specific transport method (http or websocket)
+The two decorator `rpc_method()` and `rpc_notification()` accept parameters to restric their use. `websocket` (default: True) and `http` (default: True)
+
+You can use them like this:
+```
+@MyJsonRpcWebsocketConsumerTest.rpc_notification("notification.alt_name", websocket=True, http=False)
+def notification1(param1, param2, **kwargs):
+    original_message = kwargs["orginal_message"]
+    # This notification will only be used when using websocket transport
+    return
+```
+
+
 
 ## Custom JSON encoder class
 
