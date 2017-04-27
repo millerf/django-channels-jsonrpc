@@ -607,3 +607,16 @@ class TestsNotifications(ChannelTestCase):
                                 text='{"id":1, "jsonrpc":"2.0", "method":"ping", "params":[]}')
         msg = client.receive()
         self.assertEqual(msg["result"], True)
+
+    def test_error_on_notification_frame(self):
+        @MyJsonRpcWebsocketConsumerTest.rpc_method()
+        def ping():
+            return True
+
+        client = HttpClient()
+
+        # we send a notification to the server
+        client.send_and_consume(u'websocket.receive',
+                                text='{"jsonrpc":"2.0", "method":"dwqwdq", "params":[]}')
+        msg = client.receive()
+        self.assertEqual(msg, None)
