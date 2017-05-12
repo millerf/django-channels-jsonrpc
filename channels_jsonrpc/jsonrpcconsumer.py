@@ -268,7 +268,7 @@ class JsonRpcConsumer(WebsocketConsumer):
                 if isinstance(data, dict):
 
                     try:
-                        if data.get('method') is not None and data.get('params') is not None and data.get('id') is None:
+                        if data.get('method') is not None and data.get('id') is None:
                             is_notification = True
                         result = self.__process(data, message, is_notification)
                     except JsonRpcException as e:
