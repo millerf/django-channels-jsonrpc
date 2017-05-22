@@ -13,6 +13,7 @@ else:
 
 from channels.generic.websockets import WebsocketConsumer
 from django.http import HttpResponse
+from django.conf import settings
 from channels.handler import AsgiHandler, AsgiRequest
 from six import string_types
 from corsheaders.middleware import CorsMiddleware
@@ -370,10 +371,18 @@ class JsonRpcConsumer(WebsocketConsumer):
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
+        # log call in debug mode
+        if settings.DEBUG:
+            logger.debug('Executing %s(%s)' % (method_name, json.dumps(params)))
+
         result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
         # check and pack result
         if not is_notification:
+            # log call in debug mode
+            if settings.DEBUG:
+                logger.debug('Execution result: %s' % cls._encode(result))
+
             result = JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
         elif result is not None:
             logger.warning("The notification method shouldn't return any result")
