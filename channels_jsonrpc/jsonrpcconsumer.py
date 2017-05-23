@@ -13,8 +13,10 @@ else:
 
 from channels.generic.websockets import WebsocketConsumer
 from django.http import HttpResponse
+from django.conf import settings
 from channels.handler import AsgiHandler, AsgiRequest
 from six import string_types
+from corsheaders.middleware import CorsMiddleware
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -207,31 +209,40 @@ class JsonRpcConsumer(WebsocketConsumer):
         # Get Django HttpRequest object from ASGI Message
         request = AsgiRequest(message)
 
-        # Try to process content
-        try:
-            if request.method != 'POST':
-                raise MethodNotSupported('Only POST method is supported')
-            content = request.body.decode('utf-8')
-        except (UnicodeDecodeError, MethodNotSupported):
-            content = ''
-        result, is_notification = self.__handle(content, message)
+        # CORS
+        response = CorsMiddleware().process_request(request)
+        if not isinstance(response, HttpResponse):
 
-        # Set response status code
-        # http://www.jsonrpc.org/historical/json-rpc-over-http.html#response-codes
-        if not is_notification:
-            # call response
-            status_code = 200
-            if 'error' in result:
-                status_code = self._http_codes[result['error']['code']]
-        else:
-            # notification response
-            status_code = 204
-            if result and 'error' in result:
-                status_code = self._http_codes[result['error']['code']]
-            result = ''
+            # Try to process content
+            try:
+                if request.method != 'POST':
+                    raise MethodNotSupported('Only POST method is supported')
+                content = request.body.decode('utf-8')
+            except (UnicodeDecodeError, MethodNotSupported):
+                content = ''
+            result, is_notification = self.__handle(content, message)
+
+            # Set response status code
+            # http://www.jsonrpc.org/historical/json-rpc-over-http.html#response-codes
+            if not is_notification:
+                # call response
+                status_code = 200
+                if 'error' in result:
+                    status_code = self._http_codes[result['error']['code']]
+            else:
+                # notification response
+                status_code = 204
+                if result and 'error' in result:
+                    status_code = self._http_codes[result['error']['code']]
+                result = ''
+
+            response = HttpResponse(self.__class__._encode(result), content_type='application/json-rpc',
+                                    status=status_code)
+
+        # CORS
+        response = CorsMiddleware().process_response(request, response)
 
         # Encode that response into message format (ASGI)
-        response = HttpResponse(self.__class__._encode(result), content_type='application/json-rpc', status=status_code)
         for chunk in AsgiHandler.encode_response(response):
             message.reply_channel.send(chunk)
 
@@ -360,10 +371,18 @@ class JsonRpcConsumer(WebsocketConsumer):
         if not isinstance(params, (list, dict)):
             raise JsonRpcException(data.get('id'), cls.INVALID_PARAMS)
 
+        # log call in debug mode
+        if settings.DEBUG:
+            logger.debug('Executing %s(%s)' % (method_name, json.dumps(params)))
+
         result = JsonRpcConsumer.__get_result(method, params, original_msg)
 
         # check and pack result
         if not is_notification:
+            # log call in debug mode
+            if settings.DEBUG:
+                logger.debug('Execution result: %s' % cls._encode(result))
+
             result = JsonRpcConsumer.json_rpc_frame(result=result, _id=data.get('id'))
         elif result is not None:
             logger.warning("The notification method shouldn't return any result")

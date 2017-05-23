@@ -2,3 +2,4 @@ tox==2.6.0
 channels
 six
 codeclimate-test-reporter
+django-cors-headers
