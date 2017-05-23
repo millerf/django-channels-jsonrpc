@@ -12,7 +12,7 @@ setup(
     version='1.1.9',
     packages=find_packages(),
     install_requires=[
-          'channels',
+          'channels', 'django-cors-headers'
       ],
     include_package_data=True,
     license='MIT License',
@@ -22,7 +22,7 @@ setup(
     author='Fabien Millerand - MILLER/f',
     author_email='fab@millerf.com',
     test_suite='channels_jsonrpc.tests.tests',
-    tests_require=['django', 'channels'],
+    tests_require=['django', 'channels', 'django-cors-headers'],
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
