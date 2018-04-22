@@ -1,5 +1,5 @@
 tox==2.6.0
-channels
+channels==1.1.6
 six
 codeclimate-test-reporter
 django-cors-headers
