@@ -1,6 +1,15 @@
 # Django-channels-jsonrpc
 
+--------------
+
+
+
 For channels 2, see [here](https://github.com/millerf/django-channels2-jsonrpc)
+
+
+
+--------------
+
 
 [![PyPI version](https://badge.fury.io/py/django-channels-jsonrpc.svg)](https://badge.fury.io/py/django-channels-jsonrpc) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/04d12270939d47689756edda41e9f69f)](https://www.codacy.com/app/MosaicVenture/django-channels-jsonrpc?utm_source=github.com&utm_medium=referral&utm_content=millerf/django-channels-jsonrpc&utm_campaign=badger) [![Build Status](https://travis-ci.org/millerf/django-channels-jsonrpc.svg?branch=master)](https://travis-ci.org/millerf/django-channels-jsonrpc) [![Coverage Status](https://coveralls.io/repos/github/millerf/django-channels-jsonrpc/badge.svg)](https://coveralls.io/github/millerf/django-channels-jsonrpc) [![Code Climate](https://codeclimate.com/github/millerf/django-channels-jsonrpc/badges/gpa.svg)](https://codeclimate.com/github/millerf/django-channels-jsonrpc)
 
