@@ -23,9 +23,8 @@ before_deploy:
   - echo ls /home/travis/build/millerf/django-channels-jsonrpc
 deploy:
     - provider: pypi
-      user: __token__
-      password:
-        secure: pypi-AgEIcHlwaS5vcmcCJGExMDIxZjRhLTFhZDMtNDc4YS1iOWNmLWQwMzY0OTIwZjFjNwACSHsicGVybWlzc2lvbnMiOiB7InByb2plY3RzIjogWyJkamFuZ28tY2hhbm5lbHMtanNvbnJwYyJdfSwgInZlcnNpb24iOiAxfQAABiBZg48cIBQt7HckwM4G3q-462xphsLbm7IZvjqMS4jvQw
+      user: "__token__"
+      password: pypi-AgEIcHlwaS5vcmcCJGExMDIxZjRhLTFhZDMtNDc4YS1iOWNmLWQwMzY0OTIwZjFjNwACSHsicGVybWlzc2lvbnMiOiB7InByb2plY3RzIjogWyJkamFuZ28tY2hhbm5lbHMtanNvbnJwYyJdfSwgInZlcnNpb24iOiAxfQAABiBZg48cIBQt7HckwM4G3q-462xphsLbm7IZvjqMS4jvQw
       on:
         tags: true
         distributions: sdist bdist_wheel
