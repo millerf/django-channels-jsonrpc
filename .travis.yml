@@ -25,7 +25,7 @@ deploy:
     - provider: pypi
       user: millerf
       password:
-        secure: fge3nWckd/APmSonDR8cyODVAmMiDWrA46fG1C9RzYyupDhtLOImtb2UdWaYfJECCO+Sc5LqM+mw9lfXFiLn0wput4zSzQgH7tu9IC4HeAHuD7QCZm0eZZGn6TKP0NyI7M4Dy/hbAsqMNyTvQQv1V9mhce4sLy7lyfZytY/jQx1a6TkdzY8tjWhovk5FBPGTQfqusHLv9QiWtwxA4nZvJVMu68Tf0BIYCvUXUziCTBk0A/gvICfyjO7lMK45E+MwNKP+A4zUm1y/ya1Ppq6mHMOXTXYBqE1D2WQyVDkaoGjuDCqblz1/0yvZN9Wql8X26XU88CApZVG/SEqc6Mf6eW3YxyRzaUWlQNlZlCnfYE+Czil2/ndRd9IhToWdvpvgARrzRS7tO0vuAgAt05Eg8q8vwByJt329TeS8hMIqgvHYaMqRfdo21a0ZESJHXagSvDNVE9UnM1wgfO29ENKy0aWorYB8dUxUkVGO1Dy8dq7F3Lss+Vy9NPwfi9mZi5W2TUJe8rh+C91S9OcRkrqoiAOC1rv9uxeqGND6vWQ6JL4fguqpDDvllmB1wkTg46vV++42J0fkTUBfd9YrSxdg/eSN+voCgMmL6cTK+mdbvHVTZzgbk3gAZ7Tvds80mh2OjkUctJl56RMowhDmHQHoipFnQ9phLwvNTxf/x5OByV0=
+        secure: pypi-AgEIcHlwaS5vcmcCJGExMDIxZjRhLTFhZDMtNDc4YS1iOWNmLWQwMzY0OTIwZjFjNwACSHsicGVybWlzc2lvbnMiOiB7InByb2plY3RzIjogWyJkamFuZ28tY2hhbm5lbHMtanNvbnJwYyJdfSwgInZlcnNpb24iOiAxfQAABiBZg48cIBQt7HckwM4G3q-462xphsLbm7IZvjqMS4jvQw
       on:
         tags: true
         distributions: sdist bdist_wheel
